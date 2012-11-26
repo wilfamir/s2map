@@ -43,6 +43,14 @@ inPolygonMode: function() {
   return this.$polygonMode.is(':checked');
 },
 
+/*
+ * @returns {bool}
+ */
+inPointMode: function() {
+  return this.$pointMode.is(':checked');
+},
+
+
 shouldClear: function() {
   return this.$clearButton.is(':checked');
 },
@@ -82,11 +90,19 @@ getPoints: function(tokens) {
   return points;
 },
 
-renderPolygon: function(polygon, bounds) {
+renderMarkers: function(points) {
   this.resetDisplay();
 
-  this.layerGroup.addLayer(polygon);
+  var bounds = new L.LatLngBounds(_.map(points, function(p) {
+    return p.getLatLng();
+  }));
 
+  _.each(points, _.bind(function(p) {
+    this.layerGroup.addLayer(p);
+  }, this));
+},
+
+processBounds: function(bounds) {
   if (!this.shouldClear() && !!this.previousBounds) {
     bounds = this.previousBounds.extend(bounds)
   }
@@ -98,6 +114,14 @@ renderPolygon: function(polygon, bounds) {
   var centerPixel = this.map.project(bounds.getCenter(), zoom);
   var centerPoint = this.map.unproject(centerPixel, zoom)
   this.map.setView(centerPoint, zoom);
+},
+
+renderPolygon: function(polygon, bounds) {
+  this.resetDisplay();
+
+  this.layerGroup.addLayer(polygon);
+
+  this.processBounds(bounds);
 },
 
 boundsCallback: function() {
@@ -113,40 +137,42 @@ boundsCallback: function() {
     var ll = points[0];
     this.map.setView(ll, 15);
     var marker = new L.Marker(ll);
-    this.renderPolygon(marker, new L.LatLngBounds([ll]));
-  } else {
-    if (this.inPolygonMode()) {
-      if (points.length == 2) {
-        var ll1 = points[0]
-        var ll2 = points[1]
-        var bounds = new L.LatLngBounds(ll1, ll2);
+    this.renderMarkers([marker]);
+  } else if (this.inPolygonMode()) {
+    if (points.length == 2) {
+       var ll1 = points[0]
+       var ll2 = points[1]
+       var bounds = new L.LatLngBounds(ll1, ll2);
 
-        var ne = bounds.getNorthEast();
-        var sw = bounds.getSouthWest();
-        var nw = new L.LatLng(ne.lat, sw.lng);
-        var se = new L.LatLng(sw.lat, ne.lng);
+      var ne = bounds.getNorthEast();
+      var sw = bounds.getSouthWest();
+      var nw = new L.LatLng(ne.lat, sw.lng);
+      var se = new L.LatLng(sw.lat, ne.lng);
 
-        polygonPoints = [nw, ne, se, sw];
-      } else {
-        polygonPoints = points; 
-      }
-
-
-      var polygon = new L.Polygon(polygonPoints,  
-       {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
-      this.renderPolygon(polygon, polygon.getBounds())
-   } else {
-      var polyline = new L.Polyline(points,  
-       {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2});
-      this.renderPolygon(polyline, polyline.getBounds());
-
-      _.each(_.range(0, points.length - 1), _.bind(function(index) {
-        var a = points[index];
-        var b = points[(index+1) % points.length];
-        var distance = this.distanceBetween(a, b);
-        this.addInfo(a + ' --> ' + b + '<br/>--- distance: ' + distance + 'm');
-      }, this))
+      polygonPoints = [nw, ne, se, sw];
+    } else {
+      polygonPoints = points; 
     }
+
+    var polygon = new L.Polygon(polygonPoints,  
+       {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
+    this.renderPolygon(polygon, polygon.getBounds())
+  } else if (this.inLineMode()) {
+    var polyline = new L.Polyline(points,  
+     {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2});
+    this.renderPolygon(polyline, polyline.getBounds());
+
+    _.each(_.range(0, points.length - 1), _.bind(function(index) {
+      var a = points[index];
+      var b = points[(index+1) % points.length];
+      var distance = this.distanceBetween(a, b);
+      this.addInfo(a + ' --> ' + b + '<br/>--- distance: ' + distance + 'm');
+    }, this))
+  } else if (this.inPointMode()) {
+    var markers = _.map(points, function(p) {
+      return new L.Marker(p);
+    });
+    this.renderMarkers(markers);
   }
 
   // fourSq.api.services.Geo.s2cover({
@@ -193,6 +219,7 @@ initialize: function() {
 
   this.$lineMode = this.$el.find('.lineMode');
   this.$polygonMode = this.$el.find('.polygonMode');
+  this.$pointMode = this.$el.find('.pointMode');
 
   this.$boundsButton = this.$el.find('.boundsButton');
   this.$boundsInput = this.$el.find('.boundsInput');
@@ -203,7 +230,7 @@ initialize: function() {
   this.$boundsInput.keypress(/** @param {jQuery.Event} e */ _.bind(function(e) {
     // search on enter only
     if (e.which == 13) {
-      this.boundsCallback();
+      // this.boundsCallback();
     }
   }, this));
 

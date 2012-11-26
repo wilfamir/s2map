@@ -100,6 +100,8 @@ renderMarkers: function(points) {
   _.each(points, _.bind(function(p) {
     this.layerGroup.addLayer(p);
   }, this));
+  
+  this.processBounds(bounds);
 },
 
 processBounds: function(bounds) {

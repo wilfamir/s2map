@@ -101,7 +101,7 @@ renderPolygon: function(polygon, bounds) {
 },
 
 boundsCallback: function() {
-  var bboxstr = this.$boundsInput.val()
+  var bboxstr = this.$boundsInput.val() || this.placeholder;
 
   var regex = /[+-]?\d+\.\d+/g;
   var bboxParts = bboxstr.match(regex);
@@ -207,12 +207,29 @@ initialize: function() {
     }
   }, this));
 
+  var placeholders = [
+   '40.74,-74.0',
+   '40.74,-74.0,40.75,-74.1',
+   'bbox: { \n' +
+   '  ne: { ' +
+   '     lat: 40.74,' +
+   '     lng: -74.0' +
+   '   },' +
+   '   sw: {' +
+   '     lat: 40.75, ' +
+   '     lng: -74.1 ' +
+   '   }, ' +
+   ' }',
+  ];
 
-  var points = window.location.hash.substring(1) || '40.74,-74'
+  this.placeholder = _.first(_.shuffle(placeholders));
+  this.$boundsInput.attr('placeholder', this.placeholder);
+
+  var points = window.location.hash.substring(1)
   if (!!points) {
-    this.$boundsInput.val(points)
-    this.boundsCallback();
+    this.$boundsInput.val(points);
   }
+  this.boundsCallback();
 }
 
 });

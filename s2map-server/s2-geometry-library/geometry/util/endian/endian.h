@@ -8,12 +8,19 @@
 #ifndef UTIL_ENDIAN_ENDIAN_H_
 #define UTIL_ENDIAN_ENDIAN_H_
 
+#ifdef __APPLE__
+#include "byteswap.h"
+#else
 #include <bits/byteswap.h>
+#endif
+
+
 #include <byteswap.h>
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/port.h"
 #include "base/int128.h"
+
 
 inline uint64 gbswap_64(uint64 host_int) {
 #if defined(COMPILER_GCC3) && defined(__x86_64__)

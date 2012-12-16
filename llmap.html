@@ -47,7 +47,7 @@ box-shadow: 1px 2px 6px rgba(0, 0, 0, 0.5);
         background: white;
         position: fixed;
         width: 170px;
-        height: 440 px;
+        /* height: 440 px; */
 
       }
 
@@ -135,11 +135,23 @@ a.button:active span {
         <hr/>
 
         <label>
-          <input type="checkbox" name="clearMap" value="clearMap" class="clearMap"checked/>
+          <input type="checkbox" name="clearMap" value="clearMap" class="clearMap" checked/>
           Clear map on plot
         </label>
 
-      <br/>
+        <br/>
+
+        <label>
+          <input type="checkbox" name="s2cover" value="clearMap" class="s2cover"/>
+          Show s2 covering
+        </label>
+
+        <div class="s2options" style="display: none">
+          <input size="2" class="min_level"> min_level <br/>
+          <input size="2" class="max_level"> max_level <br/>
+          <input size="2" class="max_cells"> max_cells <br/>
+        </div>
+
       <br/>
 
       <textarea class="boundsInput" rows="18"></textarea><br/>

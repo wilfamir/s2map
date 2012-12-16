@@ -50,6 +50,10 @@ inPointMode: function() {
   return this.$pointMode.is(':checked');
 },
 
+showS2Covering: function() {
+  return this.$s2coveringButton.is(':checked')
+},
+
 
 shouldClear: function() {
   return this.$clearButton.is(':checked');
@@ -95,7 +99,10 @@ getPoints: function(tokens) {
 },
 
   cellDescription: function(cell) {
-    return cell.id + ' ' + cell.token + ' : ' + cell.description + ' ('
+    return cell.id + ' ' + cell.token
+      + ' face: ' + cell.face
+      + ' level: ' + cell.level
+      + ' ('
       + cell.ll.lat + ',' + cell.ll.lng + ')';
   },
 
@@ -107,7 +114,6 @@ getPoints: function(tokens) {
     var description = this.cellDescription(cell)
     this.$infoArea.append(description);
     this.$infoArea.append('<br/>');
-
 
     var points = _(cell.shape).map(function(ll) {
       return new L.LatLng(ll.lat, ll.lng);
@@ -136,20 +142,24 @@ getPoints: function(tokens) {
     }, this));
   },
 
+  renderS2Cells: function(cells) {
+    var bounds = null;
+    var polygons = this.renderCells(cells);
+    _.each(polygons, function(p) {
+      console.log(p);
+      if (!bounds) {
+        bounds = new L.LatLngBounds([p.getBounds()]);
+      }
+      console.log(bounds);
+      bounds = bounds.extend(p.getBounds());
+      console.log(bounds);
+    });
+    this.map.fitBounds(bounds);
+  },
+
   idsCallback: function() {
     this.resetDisplay();
-    function render(cells) {
-      var bounds = null;
-      var polygons = this.renderCells(cells);
-      _.each(polygons, function(p) {
-        if (!bounds) {
-          bounds = new L.LatLngBounds([p.getBounds().getCenter()]);
-        }
-        bounds.extend(p.getBounds().getCenter());
-      });
-      this.map.fitBounds(bounds);
-    }
-
+    
     var ids = this.$boundsInput.val()
       .replace(/^\s+/g, '')
       .replace(/ /g, ',')
@@ -166,7 +176,7 @@ getPoints: function(tokens) {
         data: {
           'id': idList.slice(start, start+size).join(',')
         },
-        success: _.bind(render, this)
+        success: _.bind(this.renderS2Cells, this)
       });
     }, this));
   },
@@ -205,6 +215,32 @@ renderPolygon: function(polygon, bounds) {
   this.layerGroup.addLayer(polygon);
 
   this.processBounds(bounds);
+
+  if (this.showS2Covering()) {
+    var data = {
+      'points': _(polygon.getLatLngs()).map(function(ll) { return ll.lat + "," + ll.lng; }).join(',')
+    };
+
+    if (this.$minLevel.val()) {
+      data['min_level'] = this.$minLevel.val();
+    }
+    if (this.$maxLevel.val()) {
+      data['max_level'] = this.$maxLevel.val();
+    }
+    if (this.$maxCells.val()) {
+      data['max_cells'] = this.$maxCells.val();
+    }
+    if (this.$levelMod.val()) {
+      data['level_mod'] = this.$levelMod.val();
+    }
+
+    $.ajax({
+        url: 'http://api.s2map.com/s2cover?callback=?',
+        dataType: 'json',
+        data: data,
+        success: _.bind(this.renderS2Cells, this)
+      });
+  }
 },
 
 boundsCallback: function() {
@@ -322,6 +358,23 @@ initialize: function() {
       // this.boundsCallback();
     }
   }, this));
+
+  this.$s2options = this.$el.find('.s2options');
+  this.$s2coveringButton = this.$el.find('.s2cover');
+  this.$s2coveringButton.change(_.bind(function() {
+    if (this.showS2Covering()) {
+      this.$s2options.show();
+    } else {
+      this.$s2options.hide();
+    }
+  }, this));
+
+  this.$maxCells = this.$el.find('.max_cells');
+  this.$maxLevel = this.$el.find('.max_level');
+  this.$minLevel = this.$el.find('.min_level');
+  this.$levelMod = this.$el.find('.level_mod');
+
+  https://github.com/blackmad/s2map
 
   var placeholders = [
    '40.74,-74.0',

@@ -303,10 +303,6 @@ int S2CellId::ToFaceIJOrientation(int* pi, int* pj, int* orientation) const {
   *pi = i;
   *pj = j;
 
-  for (int i=0; i < 4; i++) {
-    printf("%d: %d\n", i, S2::kPosToOrientation[i]);
-  }
-
   if (orientation != NULL) {
     // The position of a non-leaf cell at level "n" consists of a prefix of
     // 2*n bits that identifies the cell, followed by a suffix of

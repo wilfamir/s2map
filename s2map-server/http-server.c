@@ -19,6 +19,7 @@
 #include "s2cell.h"
 #include "s2.h"
 #include "s2latlng.h"
+#include "strings/strutil.h"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -117,12 +118,14 @@ std::vector<std::string> split(const std::string &s, char delim) {
     return split(s, delim, elems);
 }
 
+#include <errno.h>
+
 void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool last) {
   S2Cell cell(*s2cellid);
   S2LatLng center(cell.id().ToPoint());
 
   stringStream << "{" << endl
-    << "\"id\":" << cell.id().id() << ","  << endl
+    << "\"id\": \"" << Int64ToString(cell.id().id()) << "\","  << endl
     << "\"token\": \"" << cell.id().ToToken() << "\"," << endl
     << "\"pos\":" << cell.id().pos() << ","  << endl
     << "\"face\":" << cell.id().face() << ","  << endl
@@ -183,18 +186,24 @@ dump_request_cb(struct evhttp_request *req, void *arg)
     printf("%s\n", ids);
     std::vector<std::string> ids_vector = split(string(ids), ',');
     for (int i = 0; i < ids_vector.size(); i++) {
-      printf("start: %s\n", ids_vector[i].c_str());
-      long long int id = atoll(ids_vector[i].c_str());
       S2CellId* s2cellid = NULL;
-      printf("id != 0 ? %d\n", (id != 0));
-      printf("%lld\n", id);
-      if (id != 0) {
+      const char *str = ids_vector[i].c_str();
+      errno = 0;    /* To distinguish success/failure after call */
+      char *endptr;
+      long long int id = strtoll(str, &endptr, 10);
+      printf("endptr %d\n", strlen(endptr));
+      printf("str %s\n", str);
+
+      if (strlen(endptr) != 0) {
+        printf("failed to parse as long long\n");
+        s2cellid = new S2CellId(S2CellId::FromToken(str).id());
+      } else {
+        printf("%lld\n", id);
+        printf("id != 0 ? %d -- %s %d\n", (id != 0), str, strlen(str));
         s2cellid = new S2CellId(id);
-        printf("cellid? %s\n", s2cellid);
-      }
+      } 
       if (s2cellid) {
-        printf("adding to json\n");
-        s2cellidToJson(s2cellid, stringStream, i == (ids_vector.size() - 1));
+        s2cellidToJson(s2cellid, stringStream, i == ids_vector.size() - 1);
       }
     }
     stringStream << "]";
@@ -208,8 +217,7 @@ dump_request_cb(struct evhttp_request *req, void *arg)
 		    "Content-Type", "application/json");
 	struct evbuffer *evb = NULL;
 	evb = evbuffer_new();
-        printf("%s\n", stringStream.str().c_str());
-        evbuffer_add_printf(evb, "%s", stringStream.str().c_str());
+  evbuffer_add_printf(evb, "%s", stringStream.str().c_str());
 	evhttp_send_reply(req, 200, "OK", evb);
  
         if (evb)

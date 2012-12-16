@@ -59,7 +59,7 @@ clean:
 	rm -f */*/objs/*.o
 	rm -f $(BINARIES)
 	rm -f *.so
-	rm s2/*wrap*
+	rm -f s2/*wrap*
 
 obj_dirs:
 	mkdir -p base/objs

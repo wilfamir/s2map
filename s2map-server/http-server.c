@@ -140,8 +140,8 @@ void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool l
    for (int i = 0; i < 4; i++) {
      S2LatLng vertex(cell.GetVertex(i));
      stringStream << "{ " << endl
-        << "\"lat\":" << center.lat().degrees() << ","  << endl
-        << "\"lng\":" << center.lng().degrees() << "" << endl
+        << "\"lat\":" << vertex.lat().degrees() << ","  << endl
+        << "\"lng\":" << vertex.lng().degrees() << "" << endl
         << "}" << endl;
       if (i != 3) {
         stringStream << ",";

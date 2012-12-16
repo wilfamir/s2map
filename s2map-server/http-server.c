@@ -223,9 +223,6 @@ dump_request_cb(struct evhttp_request *req, void *arg)
  
         if (evb)
           evbuffer_free(evb);
-
-  exit(1);
-
 }
 
 /* This callback gets invoked when we get any http request that doesn't match
@@ -401,7 +398,7 @@ main(int argc, char **argv)
 	struct evhttp *http;
 	struct evhttp_bound_socket *handle;
 
-	unsigned short port = 9999;
+	unsigned short port = atoi(argv[1]);
 #ifdef WIN32
 	WSADATA WSAData;
 	WSAStartup(0x101, &WSAData);

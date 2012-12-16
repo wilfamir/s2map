@@ -161,7 +161,7 @@ getPoints: function(tokens) {
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {
       $.ajax({
-        url: 'http://api.s2map.com/dump?callback=?',
+        url: 'http://api.s2map.com/s2info?callback=?',
         dataType: 'json',
         data: {
           'id': idList.slice(start, start+size).join(',')

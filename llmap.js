@@ -137,22 +137,20 @@ getPoints: function(tokens) {
    * @return {Array.<L.Polygon>}
    */
   renderCells: function(cells) {
-    return _(cells).map(_.bind(function(c) {
-      return this.renderCell(c);
-    }, this));
+    return _(cells).filter(function(cell) { return cell.token != "X"; })
+      .map(_.bind(function(c) {
+        return this.renderCell(c);
+      }, this));
   },
 
   renderS2Cells: function(cells) {
     var bounds = null;
     var polygons = this.renderCells(cells);
     _.each(polygons, function(p) {
-      console.log(p);
       if (!bounds) {
         bounds = new L.LatLngBounds([p.getBounds()]);
       }
-      console.log(bounds);
       bounds = bounds.extend(p.getBounds());
-      console.log(bounds);
     });
     this.map.fitBounds(bounds);
   },
@@ -166,7 +164,12 @@ getPoints: function(tokens) {
       .replace(/\n/g, ',')
       .replace(/[^\w\s\.\-\,]|_/g, '');
 
-    var idList = ids.split(',')
+    var idList = _(ids.split(',')).filter(function(id) {
+      if (id == '') {
+        return false;
+      }
+      return true;
+    });
     console.log(idList)
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {

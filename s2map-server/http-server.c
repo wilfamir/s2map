@@ -19,7 +19,10 @@
 #include "s2cellid.h"
 #include "s2cell.h"
 #include "s2.h"
+#include "s2polygon.h"
+#include "s2polygonbuilder.h"
 #include "s2latlng.h"
+#include "s2regioncoverer.h"
 #include "strings/strutil.h"
 
 #ifdef WIN32
@@ -65,44 +68,6 @@
 #endif
 
 char uri_root[512];
-
-static const struct table_entry {
-	const char *extension;
-	const char *content_type;
-} content_type_table[] = {
-	{ "txt", "text/plain" },
-	{ "c", "text/plain" },
-	{ "h", "text/plain" },
-	{ "html", "text/html" },
-	{ "htm", "text/htm" },
-	{ "css", "text/css" },
-	{ "gif", "image/gif" },
-	{ "jpg", "image/jpeg" },
-	{ "jpeg", "image/jpeg" },
-	{ "png", "image/png" },
-	{ "pdf", "application/pdf" },
-	{ "ps", "application/postsript" },
-	{ NULL, NULL },
-};
-
-/* Try to guess a good content-type for 'path' */
-static const char *
-guess_content_type(const char *path)
-{
-	const char *last_period, *extension;
-	const struct table_entry *ent;
-	last_period = strrchr(path, '.');
-	if (!last_period || strchr(last_period, '/'))
-		goto not_found; /* no exension */
-	extension = last_period + 1;
-	for (ent = &content_type_table[0]; ent->extension; ++ent) {
-		if (!evutil_ascii_strcasecmp(ent->extension, extension))
-			return ent->content_type;
-	}
-
-not_found:
-	return "application/misc";
-}
 
 std::vector<std::string> &split(const std::string &s, char delim, std::vector<std::string> &elems) {
     std::stringstream ss(s);
@@ -165,10 +130,112 @@ void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool l
 // make sure everything is in a scoped_ptr
 // s2 covering output
 
+static char *s2CellIdsToJson(char* callback, std::vector<S2CellId> ids)  {
+  std::ostringstream stringStream;
+  if (callback) {
+    stringStream << callback << "(";
+  }
+
+  stringStream << "[";
+
+  for (int i = 0; i < ids.size(); i++) {
+    s2cellidToJson(&ids[i], stringStream, i == ids.size() - 1);
+  }
+    
+  stringStream << "]";
+
+  if (callback) {
+    stringStream << ")";
+  }
+  
+  return strdup(stringStream.str().c_str());
+}
+
+static void
+s2cover_request_cb(struct evhttp_request *req, void *arg)
+{
+  struct evkeyvalq  args;
+	const char *uri = evhttp_request_get_uri(req);
+  evhttp_parse_query(uri, &args);
+
+  char* callback = (char *)evhttp_find_header(&args, "callback");
+
+  char* points = (char *)evhttp_find_header(&args, "points");
+  std::vector<S2CellId> cellids_vector;
+  if (points != NULL) {
+    printf(points);
+    scoped_ptr<S2PolygonBuilder> builder(new S2PolygonBuilder(S2PolygonBuilderOptions::DIRECTED_XOR()));
+    
+    std::vector<std::string> points_vector = split(string(points), ',');
+    std::vector<S2Point> s2points_vector;
+
+    for (int i = 0; i < points_vector.size(); i += 2) {
+      char *endptr;
+      s2points_vector.push_back(S2LatLng::FromDegrees(
+        strtod(points_vector[i].c_str(), &endptr),
+        strtod(points_vector[i+1].c_str(), &endptr)
+      ).ToPoint());
+    }
+
+    cout << s2points_vector.size() << endl;
+    
+    for (int i = 0; i < s2points_vector.size(); i++) {
+      builder->AddEdge(
+        s2points_vector[i],
+        s2points_vector[(i + 1) % s2points_vector.size()]);
+    }
+
+    S2Polygon polygon;
+    typedef vector<pair<S2Point, S2Point> > EdgeList;
+    EdgeList edgeList;
+    builder->AssemblePolygon(&polygon, &edgeList);
+
+    S2RegionCoverer coverer;
+
+    char* min_level = (char *)evhttp_find_header(&args, "min_level");
+    if (min_level) {
+      coverer.set_min_level(atoi(min_level));
+    }
+
+    char* max_level = (char *)evhttp_find_header(&args, "max_level");
+    if (max_level) {
+      coverer.set_max_level(atoi(max_level));
+    }
+
+    char* level_mod = (char *)evhttp_find_header(&args, "level_mod");
+    if (level_mod) {
+      coverer.set_level_mod(atoi(level_mod));
+    }
+
+    char* max_cells = (char *)evhttp_find_header(&args, "max_cells");
+    if (max_cells) {
+      coverer.set_max_cells(atoi(max_cells));
+    }
+
+    coverer.GetCovering(polygon, &cellids_vector); 
+  }
+
+  printf("\n");
+
+	evhttp_add_header(evhttp_request_get_output_headers(req),
+		    "Content-Type", "application/json");
+	struct evbuffer *evb = NULL;
+	evb = evbuffer_new();
+  char* json = s2CellIdsToJson(callback, cellids_vector);
+  evbuffer_add_printf(evb, "%s", json);
+	evhttp_send_reply(req, 200, "OK", evb);
+ 
+  free(json);
+
+  if (evb)
+    evbuffer_free(evb);
+}
+
+
 /* Callback used for the /dump URI, and for every non-GET request:
  * dumps all information to stdout and gives back a trivial 200 ok */
 static void
-dump_request_cb(struct evhttp_request *req, void *arg)
+s2info_request_cb(struct evhttp_request *req, void *arg)
 {
 
   struct evkeyvalq    args;
@@ -176,18 +243,13 @@ dump_request_cb(struct evhttp_request *req, void *arg)
   evhttp_parse_query(uri, &args);
 
   char* callback = (char *)evhttp_find_header(&args, "callback");
-  std::ostringstream stringStream;
-  if (callback) {
-    stringStream << callback << "(";
-  }
 
   char* ids = (char *)evhttp_find_header(&args, "id");
+  std::vector<S2CellId> cellids_vector;
   if (ids != NULL) {
-    stringStream << "[";
     printf("%s\n", ids);
     std::vector<std::string> ids_vector = split(string(ids), ',');
     for (int i = 0; i < ids_vector.size(); i++) {
-      boost::scoped_ptr<S2CellId> s2cellid(NULL);
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
       char *endptr;
@@ -197,198 +259,27 @@ dump_request_cb(struct evhttp_request *req, void *arg)
 
       if (strlen(endptr) != 0) {
         printf("failed to parse as long long\n");
-        s2cellid.reset(new S2CellId(S2CellId::FromToken(str).id()));
+        cellids_vector.push_back(S2CellId(S2CellId::FromToken(str).id()));
       } else {
         printf("%lld\n", id);
         printf("id != 0 ? %d -- %s %d\n", (id != 0), str, strlen(str));
-        s2cellid.reset(new S2CellId(id));
+        cellids_vector.push_back(S2CellId(id));
       } 
-      if (s2cellid) {
-        s2cellidToJson(s2cellid.get(), stringStream, i == ids_vector.size() - 1);
-      }
     }
-    stringStream << "]";
-  }
-
-  if (callback) {
-    stringStream << ")";
   }
 
 	evhttp_add_header(evhttp_request_get_output_headers(req),
 		    "Content-Type", "application/json");
 	struct evbuffer *evb = NULL;
 	evb = evbuffer_new();
-  evbuffer_add_printf(evb, "%s", stringStream.str().c_str());
+  char* json = s2CellIdsToJson(callback, cellids_vector);
+  evbuffer_add_printf(evb, "%s", json);
 	evhttp_send_reply(req, 200, "OK", evb);
  
-        if (evb)
-          evbuffer_free(evb);
-}
+  free(json);
 
-/* This callback gets invoked when we get any http request that doesn't match
- * any other callback.  Like any evhttp server callback, it has a simple job:
- * it must eventually call evhttp_send_error() or evhttp_send_reply().
- */
-static void
-send_document_cb(struct evhttp_request *req, void *arg)
-{
-	struct evbuffer *evb = NULL;
-	const char *docroot = (const char *)arg;
-	const char *uri = evhttp_request_get_uri(req);
-	struct evhttp_uri *decoded = NULL;
-	const char *path;
-	char *decoded_path;
-	char *whole_path = NULL;
-	size_t len;
-	int fd = -1;
-	struct stat st;
-
-	if (evhttp_request_get_command(req) != EVHTTP_REQ_GET) {
-		dump_request_cb(req, arg);
-		return;
-	}
-
-	printf("Got a GET request for <%s>\n",  uri);
-
-	/* Decode the URI */
-	decoded = evhttp_uri_parse(uri);
-	if (!decoded) {
-		printf("It's not a good URI. Sending BADREQUEST\n");
-		evhttp_send_error(req, HTTP_BADREQUEST, 0);
-		return;
-	}
-
-	/* Let's see what path the user asked for. */
-	path = evhttp_uri_get_path(decoded);
-	if (!path) path = "/";
-
-	/* We need to decode it, to see what path the user really wanted. */
-	decoded_path = evhttp_uridecode(path, 0, NULL);
-	if (decoded_path == NULL)
-		goto err;
-	/* Don't allow any ".."s in the path, to avoid exposing stuff outside
-	 * of the docroot.  This test is both overzealous and underzealous:
-	 * it forbids aceptable paths like "/this/one..here", but it doesn't
-	 * do anything to prevent symlink following." */
-	if (strstr(decoded_path, ".."))
-		goto err;
-
-	len = strlen(decoded_path)+strlen(docroot)+2;
-	if (!(whole_path = (char *)malloc(len))) {
-		perror("malloc");
-		goto err;
-	}
-	evutil_snprintf(whole_path, len, "%s/%s", docroot, decoded_path);
-
-	if (stat(whole_path, &st)<0) {
-		goto err;
-	}
-
-	/* This holds the content we're sending. */
-	evb = evbuffer_new();
-
-	if (S_ISDIR(st.st_mode)) {
-		/* If it's a directory, read the comments and make a little
-		 * index page */
-#ifdef WIN32
-		HANDLE d;
-		WIN32_FIND_DATAA ent;
-		char *pattern;
-		size_t dirlen;
-#else
-		DIR *d;
-		struct dirent *ent;
-#endif
-		const char *trailing_slash = "";
-
-		if (!strlen(path) || path[strlen(path)-1] != '/')
-			trailing_slash = "/";
-
-#ifdef WIN32
-		dirlen = strlen(whole_path);
-		pattern = malloc(dirlen+3);
-		memcpy(pattern, whole_path, dirlen);
-		pattern[dirlen] = '\\';
-		pattern[dirlen+1] = '*';
-		pattern[dirlen+2] = '\0';
-		d = FindFirstFileA(pattern, &ent);
-		free(pattern);
-		if (d == INVALID_HANDLE_VALUE)
-			goto err;
-#else
-		if (!(d = opendir(whole_path)))
-			goto err;
-#endif
-
-		evbuffer_add_printf(evb, "<html>\n <head>\n"
-		    "  <title>%s</title>\n"
-		    "  <base href='%s%s%s'>\n"
-		    " </head>\n"
-		    " <body>\n"
-		    "  <h1>%s</h1>\n"
-		    "  <ul>\n",
-		    decoded_path, /* XXX html-escape this. */
-		    uri_root, path, /* XXX html-escape this? */
-		    trailing_slash,
-		    decoded_path /* XXX html-escape this */);
-#ifdef WIN32
-		do {
-			const char *name = ent.cFileName;
-#else
-		while ((ent = readdir(d))) {
-			const char *name = ent->d_name;
-#endif
-			evbuffer_add_printf(evb,
-			    "    <li><a href=\"%s\">%s</a>\n",
-			    name, name);/* XXX escape this */
-#ifdef WIN32
-		} while (FindNextFileA(d, &ent));
-#else
-		}
-#endif
-		evbuffer_add_printf(evb, "</ul></body></html>\n");
-#ifdef WIN32
-		CloseHandle(d);
-#else
-		closedir(d);
-#endif
-		evhttp_add_header(evhttp_request_get_output_headers(req),
-		    "Content-Type", "text/html");
-	} else {
-		/* Otherwise it's a file; add it to the buffer to get
-		 * sent via sendfile */
-		const char *type = guess_content_type(decoded_path);
-		if ((fd = open(whole_path, O_RDONLY)) < 0) {
-			perror("open");
-			goto err;
-		}
-
-		if (fstat(fd, &st)<0) {
-			/* Make sure the length still matches, now that we
-			 * opened the file :/ */
-			perror("fstat");
-			goto err;
-		}
-		evhttp_add_header(evhttp_request_get_output_headers(req),
-		    "Content-Type", type);
-		evbuffer_add_file(evb, fd, 0, st.st_size);
-	}
-
-	evhttp_send_reply(req, 200, "OK", evb);
-	goto done;
-err:
-	evhttp_send_error(req, 404, "Document was not found");
-	if (fd>=0)
-		close(fd);
-done:
-	if (decoded)
-		evhttp_uri_free(decoded);
-	if (decoded_path)
-		free(decoded_path);
-	if (whole_path)
-		free(whole_path);
-	if (evb)
-		evbuffer_free(evb);
+  if (evb)
+    evbuffer_free(evb);
 }
 
 int
@@ -419,12 +310,8 @@ main(int argc, char **argv)
 		return 1;
 	}
 
-	/* The /dump URI will dump all requests to stdout and say 200 ok. */
-	evhttp_set_cb(http, "/dump", dump_request_cb, NULL);
-
-	/* We want to accept arbitrary requests, so we need to set a "generic"
-	 * cb.  We can also add callbacks for specific paths. */
-	evhttp_set_gencb(http, send_document_cb, (void *)"");
+	evhttp_set_cb(http, "/s2cover", s2cover_request_cb, NULL);
+	evhttp_set_cb(http, "/s2info", s2info_request_cb, NULL);
 
 	/* Now we tell the evhttp what port to listen on */
 	handle = evhttp_bind_socket_with_handle(http, "0.0.0.0", port);
@@ -463,7 +350,7 @@ main(int argc, char **argv)
 		addr = evutil_inet_ntop(ss.ss_family, inaddr, addrbuf,
 		    sizeof(addrbuf));
 		if (addr) {
-			printf("Listening on %s:%d\n", addr, got_port);
+			printf("HI Listening on %s:%d\n", addr, got_port);
 			evutil_snprintf(uri_root, sizeof(uri_root),
 			    "http://%s:%d",addr,got_port);
 		} else {

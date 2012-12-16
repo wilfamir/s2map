@@ -8,10 +8,18 @@ using std::max;
 using std::swap;
 using std::reverse;
 
+#ifdef __GNUC__
+#include <ext/hash_map>
+#else
 #include <hash_map>
+#endif
 using __gnu_cxx::hash_map;
 
+#ifdef __GNUC__
+#include <ext/hash_set>
+#else
 #include <hash_set>
+#endif
 using __gnu_cxx::hash_set;
 
 #include <iomanip>

@@ -64,7 +64,7 @@
 #define _EVENT_HAVE_EPOLL_CTL 1
 
 /* Define to 1 if you have the `eventfd' function. */
-#define _EVENT_HAVE_EVENTFD 1
+/* #undef _EVENT_HAVE_EVENTFD */
 
 /* Define if your system supports event ports */
 /* #undef _EVENT_HAVE_EVENT_PORTS */
@@ -271,7 +271,7 @@
 #define _EVENT_HAVE_SYS_EPOLL_H 1
 
 /* Define to 1 if you have the <sys/eventfd.h> header file. */
-#define _EVENT_HAVE_SYS_EVENTFD_H 1
+/* #undef _EVENT_HAVE_SYS_EVENTFD_H */
 
 /* Define to 1 if you have the <sys/event.h> header file. */
 /* #undef _EVENT_HAVE_SYS_EVENT_H */

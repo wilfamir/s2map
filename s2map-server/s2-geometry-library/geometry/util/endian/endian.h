@@ -8,7 +8,8 @@
 #ifndef UTIL_ENDIAN_ENDIAN_H_
 #define UTIL_ENDIAN_ENDIAN_H_
 
-#include "byteswap.h"
+#include <bits/byteswap.h>
+#include <byteswap.h>
 #include "base/integral_types.h"
 #include "base/logging.h"
 #include "base/port.h"
@@ -24,11 +25,11 @@ inline uint64 gbswap_64(uint64 host_int) {
     __asm__ ("bswap %0" : "=r" (result) : "0" (host_int));
     return result;
   }
-#elif defined(bswap_64)
-  return bswap_64(host_int);
+#elif defined(__bswap_64)
+  return __bswap_64(host_int);
 #else
-  return static_cast<uint64>(bswap_32(static_cast<uint32>(host_int >> 32))) |
-    (static_cast<uint64>(bswap_32(static_cast<uint32>(host_int))) << 32);
+  return static_cast<uint64>(__bswap_32(static_cast<uint32>(host_int >> 32))) |
+    (static_cast<uint64>(__bswap_32(static_cast<uint32>(host_int))) << 32);
 #endif  // bswap_64
 }
 

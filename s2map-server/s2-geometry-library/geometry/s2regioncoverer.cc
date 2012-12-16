@@ -13,7 +13,11 @@ using std::reverse;
 #include <functional>
 using std::less;
 
+#ifdef __GNUC__
+#include <ext/hash_set>
+#else
 #include <hash_set>
+#endif
 using __gnu_cxx::hash_set;
 
 #include <queue>

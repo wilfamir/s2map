@@ -16,7 +16,7 @@
 
 #define CONCAT(t1, t2)t1##t2
 #define DEFINE_bool(flag, default_value, help_text) bool CONCAT(FLAGS_,flag) = default_value
-#define DECLARE_bool(flag) bool CONCAT(FLAGS_,flag)
+#define DECLARE_bool(flag) extern bool CONCAT(FLAGS_,flag)
 #define DEFINE_int32(flag, default_value, help_text) int CONCAT(FLAGS_,flag) = default_value
 
 #endif  // BASE_COMMANDLINEFLAGS_H

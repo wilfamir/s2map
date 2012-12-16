@@ -75,6 +75,10 @@ addInfo: function(msg) {
 
 getPoints: function(tokens) {
   var points = [];
+  if (!tokens) {
+    return points;
+  }
+
   var isReverseOrder = this.isReverseOrder();
   _(_.range(0, tokens.length, 2)).each(function(i) {
     if (isReverseOrder) {
@@ -89,6 +93,83 @@ getPoints: function(tokens) {
   });
   return points;
 },
+
+  cellDescription: function(cell) {
+    return cell.id + ' ' + cell.token + ' : ' + cell.description + ' ('
+      + cell.ll.lat + ',' + cell.ll.lng + ')';
+  },
+
+  /** 
+   * @param {fourSq.api.models.geo.S2Response} cell
+   * @return {L.Polygon}
+   */
+  renderCell: function(cell) {
+    var description = this.cellDescription(cell)
+    this.$infoArea.append(description);
+    this.$infoArea.append('<br/>');
+
+
+    var points = _(cell.shape).map(function(ll) {
+      return new L.LatLng(ll.lat, ll.lng);
+    });
+
+    var polygon = new L.Polygon(points,
+      { 
+        color: "#ff0000",
+        weight: 1,
+        fill: true,
+        fillOpacity: 0.2
+      });
+    polygon.bindPopup(description);
+
+    this.layerGroup.addLayer(polygon);
+    return polygon;
+  },
+
+  /** 
+   * @param {Array.<fourSq.api.models.geo.S2Response>} cells
+   * @return {Array.<L.Polygon>}
+   */
+  renderCells: function(cells) {
+    return _(cells).map(_.bind(function(c) {
+      return this.renderCell(c);
+    }, this));
+  },
+
+  idsCallback: function() {
+    this.resetDisplay();
+    function render(cells) {
+      var bounds = null;
+      var polygons = this.renderCells(cells);
+      _.each(polygons, function(p) {
+        if (!bounds) {
+          bounds = new L.LatLngBounds([p.getBounds().getCenter()]);
+        }
+        bounds.extend(p.getBounds().getCenter());
+      });
+      this.map.fitBounds(bounds);
+    }
+
+    var ids = this.$boundsInput.val()
+      .replace(/^\s+/g, '')
+      .replace(/ /g, ',')
+      .replace(/\n/g, ',')
+      .replace(/[^\w\s\.\-\,]|_/g, '');
+
+    var idList = ids.split(',')
+    console.log(idList)
+    var size = 75
+    _.range(0, idList.length, size).map(_.bind(function(start) {
+      $.ajax({
+        url: 'http://api.s2map.com/dump?callback=?',
+        dataType: 'json',
+        data: {
+          'id': idList.slice(start, start+size).join(',')
+        },
+        success: _.bind(render, this)
+      });
+    }, this));
+  },
 
 renderMarkers: function(points) {
   this.resetDisplay();
@@ -135,6 +216,12 @@ boundsCallback: function() {
   var points = this.getPoints(bboxParts);
 
   var polygonPoints = []
+  if (points.length == 0) {
+    // try s2 parsing!
+    this.idsCallback();
+    return;
+  }
+
   if (points.length == 1) {
     var ll = points[0];
     this.map.setView(ll, 15);
@@ -176,7 +263,7 @@ boundsCallback: function() {
     });
     this.renderMarkers(markers);
   }
-
+ 
   // fourSq.api.services.Geo.s2cover({
   //     ne: ne.lat + ',' + ne.lng,
   //     sw: sw.lat + ',' + sw.lng

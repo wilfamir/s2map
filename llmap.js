@@ -75,6 +75,10 @@ addInfo: function(msg) {
 
 getPoints: function(tokens) {
   var points = [];
+  if (!tokens) {
+    return points;
+  }
+
   var isReverseOrder = this.isReverseOrder();
   _(_.range(0, tokens.length, 2)).each(function(i) {
     if (isReverseOrder) {
@@ -103,6 +107,7 @@ getPoints: function(tokens) {
     var description = this.cellDescription(cell)
     this.$infoArea.append(description);
     this.$infoArea.append('<br/>');
+
 
     var points = _(cell.shape).map(function(ll) {
       return new L.LatLng(ll.lat, ll.lng);
@@ -148,18 +153,20 @@ getPoints: function(tokens) {
     var ids = this.$boundsInput.val()
       .replace(/^\s+/g, '')
       .replace(/ /g, ',')
+      .replace(/\n/g, ',')
       .replace(/[^\w\s\.\-\,]|_/g, '');
 
     var idList = ids.split(',')
+    console.log(idList)
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {
       $.ajax({
-        url: 'http://api.s2map.com/dump',
+        url: 'http://api.s2map.com/dump?callback=?',
         dataType: 'json',
         data: {
           'id': idList.slice(start, start+size).join(',')
         },
-        success: _.bind(render, this);
+        success: _.bind(render, this)
       });
     }, this));
   },
@@ -209,6 +216,12 @@ boundsCallback: function() {
   var points = this.getPoints(bboxParts);
 
   var polygonPoints = []
+  if (points.length == 0) {
+    // try s2 parsing!
+    this.idsCallback();
+    return;
+  }
+
   if (points.length == 1) {
     var ll = points[0];
     this.map.setView(ll, 15);
@@ -250,7 +263,7 @@ boundsCallback: function() {
     });
     this.renderMarkers(markers);
   }
-
+ 
   // fourSq.api.services.Geo.s2cover({
   //     ne: ne.lat + ',' + ne.lng,
   //     sw: sw.lat + ',' + sw.lng

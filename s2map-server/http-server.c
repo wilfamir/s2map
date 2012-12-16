@@ -5,6 +5,7 @@
   that you would never want to do in a production webserver. Caveat hackor!
 
  */
+#include <boost/scoped_ptr.hpp>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -186,7 +187,7 @@ dump_request_cb(struct evhttp_request *req, void *arg)
     printf("%s\n", ids);
     std::vector<std::string> ids_vector = split(string(ids), ',');
     for (int i = 0; i < ids_vector.size(); i++) {
-      S2CellId* s2cellid = NULL;
+      boost::scoped_ptr<S2CellId> s2cellid(NULL);
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
       char *endptr;
@@ -196,14 +197,14 @@ dump_request_cb(struct evhttp_request *req, void *arg)
 
       if (strlen(endptr) != 0) {
         printf("failed to parse as long long\n");
-        s2cellid = new S2CellId(S2CellId::FromToken(str).id());
+        s2cellid.reset(new S2CellId(S2CellId::FromToken(str).id()));
       } else {
         printf("%lld\n", id);
         printf("id != 0 ? %d -- %s %d\n", (id != 0), str, strlen(str));
-        s2cellid = new S2CellId(id);
+        s2cellid.reset(new S2CellId(id));
       } 
       if (s2cellid) {
-        s2cellidToJson(s2cellid, stringStream, i == ids_vector.size() - 1);
+        s2cellidToJson(s2cellid.get(), stringStream, i == ids_vector.size() - 1);
       }
     }
     stringStream << "]";
@@ -222,6 +223,8 @@ dump_request_cb(struct evhttp_request *req, void *arg)
  
         if (evb)
           evbuffer_free(evb);
+
+  exit(1);
 
 }
 

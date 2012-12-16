@@ -1,0 +1,66 @@
+<html>
+
+<body>
+
+s2map is a simple geo visualizer <br/>
+<a href="https://github.com/blackmad/s2map">source code on gitbhub</a>
+
+</p>
+
+I find I have one or more lat/lngs, and I want to put them on a map and not worry about formatting, writing a file, etc, so I just paste it into s2map.com
+
+<ul>
+
+<li>
+<a href="http://cl.ly/image/1n2o1p0Y2e0A">
+example of pasting in a bounding box from some json
+</a>
+</li>
+
+<li>
+<a href="http://s2map.com/#40.74,-74,40.75,-74.05">
+using it via url params (doesn't support all the options yet)
+</a>
+</li>
+
+<li>
+<a href="http://cl.ly/image/1s12263h0X3r">
+rendering some geojson coordinates in lng/lat format
+</a>
+</li>
+
+</ul>
+
+I'm curious if other people find this useful or have feature suggestions.
+
+<p/>
+
+oh, and just for kicks alt/ctrl/meta+click pops up a balloon with lat/lng info
+
+<p/>
+
+Additionally, s2map demonstrates the power of google's s2 (spherical geometry library) available for <a href="http://code.google.com/p/s2-geometry-library/">C++</a> (which doesn't compile publicly, the version in <a href="https://github.com/blackmad/s2map">my github repo</a> does) and <a href="http://code.google.com/p/s2-geometry-library-java/">java</a> (in extensive use at <a href="http://foursquare.com">foursquare</a>). We use it as a very robust geohashing library with a number of great properties (skip-level indexing, prefix parents). Read the code, it's beautiful and well documented and a pretty good intro to the concepts.
+
+<ul>
+<li>
+<a href="/img/demo/default_covering.png">
+Generating the default s2 covering for a bounding box
+</a>
+</li>
+
+<li>
+<a href="/img/demo/100cells.png">
+S2 covering with 100 cells
+</a>
+</li>
+
+<li>
+<a href="/img/demo/cells.png">
+Visualizing some cell ids (tries to guess if you're visualizing cell ids or tokens)
+</a>
+</li>
+
+</ul>
+
+</body>
+</html>

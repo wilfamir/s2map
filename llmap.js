@@ -317,14 +317,19 @@ initialize: function() {
 
   var opts = {
     layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
-    attributionControl: true,
+    attributionControl: false,
     zoomControl: false
   }
-
+ 
   this.map = new L.Map('map', opts);
   var zoom = new L.Control.Zoom()
   zoom.setPosition('topright');
   this.map.addControl(zoom);
+
+  var attribution = new L.Control.Attribution();
+  attribution.addAttribution("<a href=\"http://code.google.com/p/s2-geometry-library/\">S2</a>");
+  attribution.addAttribution("<a href=\"/README.html\">About</a>");
+  this.map.addControl(attribution);
 
   this.layerGroup = new L.LayerGroup();
   this.map.addLayer(this.layerGroup);

@@ -312,7 +312,7 @@ boundsCallback: function() {
 },
 
 initialize: function() {
-  var mapUrl = 'http://{s}.tiles.mapbox.com/v3/mapbox.mapbox-streets/{z}/{x}/{y}.png';
+  var mapUrl = 'http://tiles.mapbox.com/v3/e8e0d8,base.live-landuse,base.live-water,base.live-buildings,base.live-streets/{z}/{x}/{y}.png';
   var subdomains = ['a','b','c','d'];
 
   var opts = {
@@ -382,7 +382,7 @@ initialize: function() {
   this.$minLevel = this.$el.find('.min_level');
   this.$levelMod = this.$el.find('.level_mod');
 
-  https://github.com/blackmad/s2map
+  // https://github.com/blackmad/s2map
 
   var placeholders = [
    '40.74,-74.0',

@@ -312,7 +312,9 @@ boundsCallback: function() {
 },
 
 initialize: function() {
-  var mapUrl = 'http://tiles.mapbox.com/v3/e8e0d8,base.live-landuse,base.live-water,base.live-buildings,base.live-streets/{z}/{x}/{y}.png';
+  var mapUrl = 'http://{s}.tiles.mapbox.com/v3/blackmad.map-yqfgdgkv/{z}/{x}/{y}.png'
+  
+  http://tiles.mapbox.com/v3/e8e0d8,base.live-landuse,base.live-water,base.live-buildings,base.live-streets/{z}/{x}/{y}.png';
   var subdomains = ['a','b','c','d'];
 
   var opts = {

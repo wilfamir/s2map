@@ -174,7 +174,8 @@ getPoints: function(tokens) {
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {
       $.ajax({
-        url: 'http://api.s2map.com/s2info?callback=?',
+        url: 'http://www.s2map.com/api/s2info?callback=?',
+	type: 'GET',
         dataType: 'json',
         data: {
           'id': idList.slice(start, start+size).join(',')
@@ -238,7 +239,8 @@ renderPolygon: function(polygon, bounds) {
     }
 
     $.ajax({
-        url: 'http://api.s2map.com/s2cover?callback=?',
+        url: '/api/s2cover',
+	type: 'POST',
         dataType: 'json',
         data: data,
         success: _.bind(this.renderS2Cells, this)

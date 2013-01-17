@@ -23,7 +23,6 @@
 #include "s2polygonbuilder.h"
 #include "s2latlng.h"
 #include "s2regioncoverer.h"
-#include "strings/strutil.h"
 
 #ifdef WIN32
 #include <winsock2.h>
@@ -91,7 +90,7 @@ void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool l
   S2LatLng center(cell.id().ToPoint());
 
   stringStream << "{" << endl
-    << "\"id\": \"" << Int64ToString(cell.id().id()) << "\","  << endl
+    << "\"id\": \"" << cell.id().id() << "\","  << endl
     << "\"token\": \"" << cell.id().ToToken() << "\"," << endl
     << "\"pos\":" << cell.id().pos() << ","  << endl
     << "\"face\":" << cell.id().face() << ","  << endl
@@ -155,8 +154,26 @@ static void
 s2cover_request_cb(struct evhttp_request *req, void *arg)
 {
   struct evkeyvalq  args;
-	const char *uri = evhttp_request_get_uri(req);
-  evhttp_parse_query(uri, &args);
+
+  struct evbuffer *inputBuffer = evhttp_request_get_input_buffer (req);
+  size_t record_len = evbuffer_get_length(inputBuffer);
+  char *postData = NULL;
+  const char *path = "/?";
+  if (record_len > 0) { 
+    postData = (char *)malloc(strlen(path) + record_len + 10);
+    postData[0] = '/';
+    postData[1] = '?';
+    evbuffer_pullup(inputBuffer, -1);                                                                                                                                                     
+    evbuffer_copyout(inputBuffer, (char *)postData + strlen(path), record_len);
+    postData[strlen(path) + record_len] = '\0';
+    printf("trying to parse: %s\n", (const char *)postData);
+    evhttp_parse_query((const char *)postData, &args);
+    char* points = (char *)evhttp_find_header(&args, "points");
+    printf(points);
+  } else {
+    const char *uri = evhttp_request_get_uri(req);
+    evhttp_parse_query(uri, &args);
+  }
 
   char* callback = (char *)evhttp_find_header(&args, "callback");
 
@@ -226,6 +243,9 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
 	evhttp_send_reply(req, 200, "OK", evb);
  
   free(json);
+
+  if (postData)
+    free(postData);
 
   if (evb)
     evbuffer_free(evb);

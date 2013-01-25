@@ -296,10 +296,10 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
       char *endptr;
-      unsigned long int id = strtoll(str, &endptr, 10);
-      if (str[0] != '-') {
+      uint64_t id = strtoull(str, &endptr, 10);
+      /*if (str[0] != '-') {
         id = strtoul(str, &endptr, 10);
-      }
+      }*/
 
       printf("endptr %d\n", strlen(endptr));
       printf("str %s\n", str);

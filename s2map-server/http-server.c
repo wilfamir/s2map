@@ -5,6 +5,8 @@
   that you would never want to do in a production webserver. Caveat hackor!
 
  */
+#include "download.h"
+
 #include <boost/scoped_ptr.hpp>
 
 #include <stdio.h>
@@ -88,6 +90,7 @@ std::vector<std::string> split(const std::string &s, char delim) {
 void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool last) {
   S2Cell cell(*s2cellid);
   S2LatLng center(cell.id().ToPoint());
+  stringStream.precision(30);
 
   stringStream << "{" << endl
     << "\"id\": \"" << cell.id().id() << "\","  << endl
@@ -251,6 +254,25 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
     evbuffer_free(evb);
 }
 
+/* Callback used for the /dump URI, and for every non-GET request:
+ * dumps all information to stdout and gives back a trivial 200 ok */
+static void
+fetch_request_cb(struct evhttp_request *req, void *arg)
+{
+
+  struct evkeyvalq    args;
+	const char *uri = evhttp_request_get_uri(req);
+  evhttp_parse_query(uri, &args);
+
+  char* url = (char *)evhttp_find_header(&args, "url");
+
+  struct evbuffer *evb = download_url(url);
+  evbuffer_pullup(evb, -1);
+	evhttp_send_reply(req, 200, "OK", evb);
+ 
+  if (evb)
+    evbuffer_free(evb);
+}
 
 /* Callback used for the /dump URI, and for every non-GET request:
  * dumps all information to stdout and gives back a trivial 200 ok */
@@ -332,6 +354,7 @@ main(int argc, char **argv)
 
 	evhttp_set_cb(http, "/s2cover", s2cover_request_cb, NULL);
 	evhttp_set_cb(http, "/s2info", s2info_request_cb, NULL);
+	evhttp_set_cb(http, "/fetch", fetch_request_cb, NULL);
 
 	/* Now we tell the evhttp what port to listen on */
 	handle = evhttp_bind_socket_with_handle(http, "0.0.0.0", port);

@@ -296,13 +296,14 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
       char *endptr;
-      long long int id = strtoll(str, &endptr, 10);
+      unsigned long int id = strtoll(str, &endptr, 10);
       if (str[0] != '-') {
         id = strtoul(str, &endptr, 10);
       }
 
       printf("endptr %d\n", strlen(endptr));
       printf("str %s\n", str);
+      printf("id %lld\n", id);
 
       if (strlen(endptr) != 0) {
         printf("failed to parse as long long\n");

@@ -266,9 +266,12 @@ fetch_request_cb(struct evhttp_request *req, void *arg)
   evhttp_parse_query(uri, &args);
 
   char* url = (char *)evhttp_find_header(&args, "url");
+  printf("%s\n", url);
 
   struct evbuffer *evb = download_url(url);
-  evbuffer_pullup(evb, -1);
+  if (evb) {
+    evbuffer_pullup(evb, -1);
+  }
 	evhttp_send_reply(req, 200, "OK", evb);
  
   if (evb)

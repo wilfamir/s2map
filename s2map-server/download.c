@@ -44,15 +44,18 @@ void download_callback(struct evhttp_request *req, void *arg)
 		 * Response is received. No futher handling is required.
 		 * Finish
 		 */
+    printf("ok\n");
 		event_base_loopexit(ctx->base, 0);
 		break;
 
 	case HTTP_MOVEPERM:
 	case HTTP_MOVETEMP:
+    printf("moved\n");
 		new_location = evhttp_find_header(req->input_headers, "Location");
 		if (!new_location)
 			return;
 
+    printf(new_location);
 		new_uri = evhttp_uri_parse(new_location);
 		if (!new_uri)
 			return;
@@ -64,6 +67,8 @@ void download_callback(struct evhttp_request *req, void *arg)
 		return;
 
 	default:
+    printf("%d\n", req->response_code);
+    printf("failure\n");
 		/* FAILURE */
 		event_base_loopexit(ctx->base, 0);
 		return;
@@ -124,9 +129,16 @@ int download_renew_request(struct download_context *ctx)
 
 	ctx->req = evhttp_request_new(download_callback, ctx);
 
+  char uri[1000];
+  evhttp_uri_join (ctx->uri, uri, 1000);
+  printf("uri: %s\n", uri);
+
   const char * query = evhttp_uri_get_query(ctx->uri);
+  printf("query: %s\n", query);
+  const char * path = evhttp_uri_get_path(ctx->uri);
+  printf("path: %s\n", path);
 	evhttp_make_request(ctx->cn, ctx->req, EVHTTP_REQ_GET,
-		query ? query : "/");
+    uri);
 
 	evhttp_add_header(ctx->req->output_headers,
                             "Host", evhttp_uri_get_host(ctx->uri));

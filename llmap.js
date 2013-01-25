@@ -1,3 +1,16 @@
+var baseurl = function(part) {
+  return '/api' + part;
+}
+
+var method = 'POST';
+if (window.location.host == 'localhost') {
+  baseurl = function(part) {
+    return 'http://localhost:9000' + part + '?callback=?';
+  }
+  method = 'GET';
+  dataType = 'jsonp';
+}
+
 var PageController = Backbone.Model.extend({
 /**
  * The earth's radius in meters
@@ -110,8 +123,16 @@ getPoints: function(tokens) {
    * @param {fourSq.api.models.geo.S2Response} cell
    * @return {L.Polygon}
    */
-  renderCell: function(cell) {
+  renderCell: function(cell, color, extraDesc) {
+    if (!!color) {
+      color = "#ff0000"
+    }
+
     var description = this.cellDescription(cell)
+    if (extraDesc) {
+      description += '<br>' + extraDesc;
+    }
+
     this.$infoArea.append(description);
     this.$infoArea.append('<br/>');
 
@@ -121,7 +142,7 @@ getPoints: function(tokens) {
 
     var polygon = new L.Polygon(points,
       { 
-        color: "#ff0000",
+        color: color,
         weight: 1,
         fill: true,
         fillOpacity: 0.2
@@ -174,8 +195,8 @@ getPoints: function(tokens) {
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {
       $.ajax({
-        url: 'http://www.s2map.com/api/s2info?callback=?',
-	type: 'GET',
+        url: baseurl('/s2info'),
+        type: method,
         dataType: 'json',
         data: {
           'id': idList.slice(start, start+size).join(',')
@@ -239,8 +260,8 @@ renderPolygon: function(polygon, bounds) {
     }
 
     $.ajax({
-        url: '/api/s2cover',
-	type: 'POST',
+        url: baseurl('/s2cover'),
+        type: method,
         dataType: 'json',
         data: data,
         success: _.bind(this.renderS2Cells, this)
@@ -411,7 +432,62 @@ initialize: function() {
     this.$boundsInput.val(points);
   }
   this.boundsCallback();
-}
+},
 
+/** 
+ * @param {Array.<fourSq.api.models.geo.S2Response>} cells
+ * @return {Array.<L.Polygon>}
+ */
+renderCellsForHeatmap: function(cells, cellColorMap, cellDescMap) {
+  return _(cells).filter(function(cell) { return cell.token != "X"; })
+    .map(_.bind(function(c) {
+      var color = cellColorMap[cell.token] || cellColorMap[cell.id] || cellColorMap[cell.id_signed];
+      var desc = cellDescMap[cell.token] || cellDescMap[cell.id] || cellDescMap[cell.id_signed];
+      return this.renderCell(c, color, desc);
+    }, this));
+},
+
+renderHeatmapHelper: function(data) {
+  var lines = data.split('\n');
+
+  var cellColorMap = {};
+  var cellDescMap = {};
+  var cells = []
+  _(lines).map(function(line) {
+    var parts = line.split(',');
+    var cell = parts[0];
+    var color = parts[1];
+    var desc = parts[2];
+    cells.push(cell);
+    cellColorMap[cell] = color;
+    if (desc) {
+      cellDescMap[cell] = desc;
+    }
+  });
+
+  debugger;
+
+  $.ajax({
+    url: baseurl('/s2info'),
+    type: method,
+    dataType: 'json',
+    data: {
+      'id': cells.join(',')
+    },
+    success: _.bind(this.renderCellsForHeatmap, this, cellColorMap, cellDescMap)
+  });
+},
+
+renderHeatmap: function(url) {
+  $.ajax({
+    url: baseurl('/fetch'),
+    type: method,
+    dataType: dataType,
+    data: {
+      'url': url
+    },
+    success: _.bind(this.renderHeatmapHelper, this)
+  });
+}
 });
 

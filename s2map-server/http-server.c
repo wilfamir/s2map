@@ -285,8 +285,23 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
 {
 
   struct evkeyvalq    args;
-	const char *uri = evhttp_request_get_uri(req);
-  evhttp_parse_query(uri, &args);
+  struct evbuffer *inputBuffer = evhttp_request_get_input_buffer (req);
+  size_t record_len = evbuffer_get_length(inputBuffer);
+  char *postData = NULL;
+  const char *path = "/?";
+  if (record_len > 0) { 
+    postData = (char *)malloc(strlen(path) + record_len + 10);
+    postData[0] = '/';
+    postData[1] = '?';
+    evbuffer_pullup(inputBuffer, -1);                                                                                                                                                     
+    evbuffer_copyout(inputBuffer, (char *)postData + strlen(path), record_len);
+    postData[strlen(path) + record_len] = '\0';
+    printf("trying to parse: %s\n", (const char *)postData);
+    evhttp_parse_query((const char *)postData, &args);
+  } else {
+    const char *uri = evhttp_request_get_uri(req);
+    evhttp_parse_query(uri, &args);
+  }
 
   char* callback = (char *)evhttp_find_header(&args, "callback");
 

@@ -98,6 +98,7 @@ void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool l
 
   stringStream << "{" << endl
     << "\"id\": \"" << cell.id().id() << "\","  << endl
+    << "\"id_signed\": \"" << (long long)cell.id().id() << "\","  << endl
     << "\"token\": \"" << cell.id().ToToken() << "\"," << endl
     << "\"pos\":" << cell.id().pos() << ","  << endl
     << "\"face\":" << cell.id().face() << ","  << endl
@@ -300,6 +301,10 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
       errno = 0;    /* To distinguish success/failure after call */
       char *endptr;
       long long int id = strtoll(str, &endptr, 10);
+      if (str[0] != '-') {
+        id = strtoul(str, &endptr, 10);
+      }
+
       printf("endptr %d\n", strlen(endptr));
       printf("str %s\n", str);
 
@@ -309,6 +314,7 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
       } else {
         printf("%lld\n", id);
         printf("id != 0 ? %d -- %s %d\n", (id != 0), str, strlen(str));
+        printf("is_valid? %d\n", S2CellId(id).is_valid());
         cellids_vector.push_back(S2CellId(id));
       } 
     }

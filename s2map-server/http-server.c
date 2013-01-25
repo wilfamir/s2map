@@ -88,6 +88,8 @@ std::vector<std::string> split(const std::string &s, char delim) {
 void s2cellidToJson(S2CellId* s2cellid, std::ostringstream& stringStream, bool last) {
   S2Cell cell(*s2cellid);
   S2LatLng center(cell.id().ToPoint());
+ 
+  stringStream.precision(30);
 
   stringStream << "{" << endl
     << "\"id\": \"" << cell.id().id() << "\","  << endl

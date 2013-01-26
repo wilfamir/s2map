@@ -117,11 +117,18 @@ void context_free(struct download_context *ctx)
 static
 int download_renew_request(struct download_context *ctx)
 {
+  printf("renew req\n");
+  if (!ctx) {
+    return -1;
+  }
+  printf("didn't give up!!!!\n");
 	/* free connections & request */
 	if (ctx->cn)
 		evhttp_connection_free(ctx->cn);
+  printf("maybe freed\n");
 
 	int port = evhttp_uri_get_port(ctx->uri);
+  printf("got port\n");
 	ctx->cn = evhttp_connection_base_new(
 		ctx->base, NULL, 
     evhttp_uri_get_host(ctx->uri),
@@ -148,6 +155,7 @@ int download_renew_request(struct download_context *ctx)
 struct evbuffer *download_url(const char *url)
 {
 	/* setup request, connection etc */
+  printf(url);
 
 	struct download_context *ctx = context_new(url);
 	if (!ctx)

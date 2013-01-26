@@ -5,7 +5,8 @@
   that you would never want to do in a production webserver. Caveat hackor!
 
  */
-#include "download.h"
+#include <curl/curl.h>
+#include <curl/easy.h>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -255,6 +256,12 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
     evbuffer_free(evb);
 }
 
+size_t write_data(void *ptr, size_t size, size_t nmemb, struct evbuffer *evb) {
+  size_t toWrite = size * nmemb;
+  evbuffer_add(evb, ptr, toWrite);
+  return toWrite;
+}
+
 /* Callback used for the /dump URI, and for every non-GET request:
  * dumps all information to stdout and gives back a trivial 200 ok */
 static void
@@ -264,18 +271,27 @@ fetch_request_cb(struct evhttp_request *req, void *arg)
   struct evkeyvalq    args;
 	const char *uri = evhttp_request_get_uri(req);
   evhttp_parse_query(uri, &args);
-
   char* url = (char *)evhttp_find_header(&args, "url");
-  printf("%s\n", url);
-
-  struct evbuffer *evb = download_url(url);
-  if (evb) {
-    evbuffer_pullup(evb, -1);
+  
+	struct evbuffer *evb = NULL;
+  if (url && strlen(url) > 0) {
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    if (curl) {
+	    evb = evbuffer_new();
+      curl_easy_setopt(curl, CURLOPT_URL, url);
+      curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+      curl_easy_setopt(curl, CURLOPT_WRITEDATA, evb);
+      res = curl_easy_perform(curl);
+      curl_easy_cleanup(curl);
+      // this should probably use the curlcode status
+      evhttp_send_reply(req, 200, "OK", evb);
+      evbuffer_free(evb);
+    }
+  } else {
+    evhttp_send_reply(req, 500, "MEH", NULL);
   }
-	evhttp_send_reply(req, 200, "OK", evb);
- 
-  if (evb)
-    evbuffer_free(evb);
 }
 
 /* Callback used for the /dump URI, and for every non-GET request:

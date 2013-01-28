@@ -5,7 +5,8 @@
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.ie.css" />
 <![endif]-->
 
-<script src="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.js"></script>    <script type="text/javascript" src="thirdparty/jquery.js"></script>
+<script src="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.js"></script>    
+<script type="text/javascript" src="thirdparty/jquery.js"></script>
     <script type="text/javascript" src="thirdparty/underscore.js"></script>
     <script type="text/javascript" src="thirdparty/backbone-min.js"></script>
     <script type="text/javascript" src="llmap.js"></script>
@@ -182,6 +183,7 @@ a.button:active span {
     <script>
       $(function() {
         var Page = new PageController();
+	Page.initMapPage();
       });
     </script>
   </body>

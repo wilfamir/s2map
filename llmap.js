@@ -8,7 +8,6 @@ if (window.location.host == 'localhost') {
     return 'http://localhost:9000' + part + '?callback=?';
   }
   method = 'GET';
-  dataType = 'jsonp';
 }
 
 var PageController = Backbone.Model.extend({
@@ -112,11 +111,12 @@ getPoints: function(tokens) {
 },
 
   cellDescription: function(cell) {
-    return cell.id + ' ' + cell.token
-      + ' face: ' + cell.face
-      + ' level: ' + cell.level
-      + ' ('
-      + cell.ll.lat + ',' + cell.ll.lng + ')';
+    return 'cell id (unsigned): ' + cell.id + '<br>' + 
+      'cell id (signed): ' + cell.id_signed + '<br>' + 
+      'cell token: ' + cell.token + '<br>' + 
+  //    'face: ' + cell.face + '<br>' + 
+      'level: ' + cell.level + '<br>' + 
+      'center: ' + cell.ll.lat + "," + cell.ll.lng; 
   },
 
   /** 
@@ -124,13 +124,13 @@ getPoints: function(tokens) {
    * @return {L.Polygon}
    */
   renderCell: function(cell, color, extraDesc) {
-    if (!!color) {
+    if (!color) {
       color = "#ff0000"
     }
 
     var description = this.cellDescription(cell)
     if (extraDesc) {
-      description += '<br>' + extraDesc;
+      description += '<p>' + extraDesc;
     }
 
     this.$infoArea.append(description);
@@ -191,7 +191,6 @@ getPoints: function(tokens) {
       }
       return true;
     });
-    console.log(idList)
     var size = 75
     _.range(0, idList.length, size).map(_.bind(function(start) {
       $.ajax({
@@ -335,13 +334,18 @@ boundsCallback: function() {
 },
 
 initialize: function() {
-  var mapUrl = 'http://{s}.tiles.mapbox.com/v3/blackmad.map-yqfgdgkv/{z}/{x}/{y}.png'
-  
-  http://tiles.mapbox.com/v3/e8e0d8,base.live-landuse,base.live-water,base.live-buildings,base.live-streets/{z}/{x}/{y}.png';
-  var subdomains = ['a','b','c','d'];
+  var mqTilesAttr = 'Tiles &copy; <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png" />';
+  var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
 
   var opts = {
-    layers: new L.TileLayer(mapUrl, {subdomains: subdomains}),
+    layers: new L.TileLayer(
+      'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
+      {
+        subdomains: '1234',
+        type: 'osm',
+        attribution: 'Map data ' + osmAttr + ', ' + mqTilesAttr
+      }
+    ),
     attributionControl: false,
     zoomControl: false
   }
@@ -408,7 +412,9 @@ initialize: function() {
   this.$levelMod = this.$el.find('.level_mod');
 
   // https://github.com/blackmad/s2map
+},
 
+initMapPage: function() {
   var placeholders = [
    '40.74,-74.0',
    '40.74,-74.0,40.75,-74.1',
@@ -438,13 +444,23 @@ initialize: function() {
  * @param {Array.<fourSq.api.models.geo.S2Response>} cells
  * @return {Array.<L.Polygon>}
  */
-renderCellsForHeatmap: function(cells, cellColorMap, cellDescMap) {
-  return _(cells).filter(function(cell) { return cell.token != "X"; })
+renderCellsForHeatmap: function(cellColorMap, cellDescMap, cells) {
+  var polygons = _(cells).filter(function(cell) { return cell.token != "X"; })
     .map(_.bind(function(c) {
-      var color = cellColorMap[cell.token] || cellColorMap[cell.id] || cellColorMap[cell.id_signed];
-      var desc = cellDescMap[cell.token] || cellDescMap[cell.id] || cellDescMap[cell.id_signed];
+      var color = cellColorMap[c.token] || cellColorMap[c.id] || cellColorMap[c.id_signed];
+      if (color) { color = '#' + color; }
+      var desc = cellDescMap[c.token] || cellDescMap[c.id] || cellDescMap[c.id_signed];
       return this.renderCell(c, color, desc);
     }, this));
+
+  var bounds = null;
+   _.each(polygons, function(p) {
+      if (!bounds) {
+        bounds = new L.LatLngBounds([p.getBounds()]);
+      }
+      bounds = bounds.extend(p.getBounds());
+    });
+    this.map.fitBounds(bounds);
 },
 
 renderHeatmapHelper: function(data) {
@@ -465,8 +481,6 @@ renderHeatmapHelper: function(data) {
     }
   });
 
-  debugger;
-
   $.ajax({
     url: baseurl('/s2info'),
     type: method,
@@ -481,8 +495,8 @@ renderHeatmapHelper: function(data) {
 renderHeatmap: function(url) {
   $.ajax({
     url: baseurl('/fetch'),
-    type: method,
-    dataType: dataType,
+    // type: method,
+    type: 'GET',
     data: {
       'url': url
     },

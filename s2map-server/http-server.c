@@ -321,11 +321,28 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
 
   char* callback = (char *)evhttp_find_header(&args, "callback");
 
+
+
   char* ids = (char *)evhttp_find_header(&args, "id");
   std::vector<S2CellId> cellids_vector;
+ 
   if (ids != NULL) {
     printf("%s\n", ids);
     std::vector<std::string> ids_vector = split(string(ids), ',');
+    bool treat_as_tokens = false;
+    for (int i = 0; i < ids_vector.size(); i++) {
+      const char *str = ids_vector[i].c_str();
+      errno = 0;    /* To distinguish success/failure after call */
+      char *endptr;
+      uint64_t id = strtoull(str, &endptr, 10);
+
+      if (strlen(endptr) != 0) {
+        printf("failed to parse as long long, treating everything as tokens\n");
+        treat_as_tokens = true;
+      }
+    }
+
+
     for (int i = 0; i < ids_vector.size(); i++) {
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
@@ -339,7 +356,7 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
       printf("str %s\n", str);
       printf("id %lld\n", id);
 
-      if (strlen(endptr) != 0) {
+      if (strlen(endptr) != 0 || treat_as_tokens) {
         printf("failed to parse as long long\n");
         cellids_vector.push_back(S2CellId(S2CellId::FromToken(str).id()));
       } else {

@@ -330,6 +330,7 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
     printf("%s\n", ids);
     std::vector<std::string> ids_vector = split(string(ids), ',');
     bool treat_as_tokens = false;
+    int num_evenly_divisible = 0;
     for (int i = 0; i < ids_vector.size(); i++) {
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */
@@ -340,9 +341,16 @@ s2info_request_cb(struct evhttp_request *req, void *arg)
         printf("failed to parse as long long, treating everything as tokens\n");
         treat_as_tokens = true;
       }
+      else if (id % 1000 == 0) {
+        printf("was even divisible by 1000, assume this was a misinterpreted token\n");
+        num_evenly_divisible += 1;
+      }
     }
 
-
+    if (num_evenly_divisible == ids_vector.size()) {
+      treat_as_tokens = true;
+    }
+   
     for (int i = 0; i < ids_vector.size(); i++) {
       const char *str = ids_vector[i].c_str();
       errno = 0;    /* To distinguish success/failure after call */

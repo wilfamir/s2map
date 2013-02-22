@@ -174,7 +174,7 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
     printf("trying to parse: %s\n", (const char *)postData);
     evhttp_parse_query((const char *)postData, &args);
     char* points = (char *)evhttp_find_header(&args, "points");
-    printf(points);
+    cout << points << endl;
   } else {
     const char *uri = evhttp_request_get_uri(req);
     evhttp_parse_query(uri, &args);
@@ -199,42 +199,52 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
       ).ToPoint());
     }
 
-    cout << s2points_vector.size() << endl;
-    
-    for (int i = 0; i < s2points_vector.size(); i++) {
-      builder->AddEdge(
-        s2points_vector[i],
-        s2points_vector[(i + 1) % s2points_vector.size()]);
+    if (s2points_vector.size() == 1) {
+      char* min_level = (char *)evhttp_find_header(&args, "min_level");
+      if (min_level == NULL) {
+        min_level = (char *)evhttp_find_header(&args, "mac_level");
+      }
+      if (min_level == NULL) {
+        min_level = "12";
+      }
+
+      cellids_vector.push_back(S2CellId::FromPoint(s2points_vector[0]).parent(atoi(min_level)));
+    } else {
+      for (int i = 0; i < s2points_vector.size(); i++) {
+        builder->AddEdge(
+          s2points_vector[i],
+          s2points_vector[(i + 1) % s2points_vector.size()]);
+      }
+
+      S2Polygon polygon;
+      typedef vector<pair<S2Point, S2Point> > EdgeList;
+      EdgeList edgeList;
+      builder->AssemblePolygon(&polygon, &edgeList);
+
+      S2RegionCoverer coverer;
+
+      char* min_level = (char *)evhttp_find_header(&args, "min_level");
+      if (min_level) {
+        coverer.set_min_level(atoi(min_level));
+      }
+
+      char* max_level = (char *)evhttp_find_header(&args, "max_level");
+      if (max_level) {
+        coverer.set_max_level(atoi(max_level));
+      }
+
+      char* level_mod = (char *)evhttp_find_header(&args, "level_mod");
+      if (level_mod) {
+        coverer.set_level_mod(atoi(level_mod));
+      }
+
+      char* max_cells = (char *)evhttp_find_header(&args, "max_cells");
+      if (max_cells) {
+        coverer.set_max_cells(atoi(max_cells));
+      }
+
+      coverer.GetCovering(polygon, &cellids_vector); 
     }
-
-    S2Polygon polygon;
-    typedef vector<pair<S2Point, S2Point> > EdgeList;
-    EdgeList edgeList;
-    builder->AssemblePolygon(&polygon, &edgeList);
-
-    S2RegionCoverer coverer;
-
-    char* min_level = (char *)evhttp_find_header(&args, "min_level");
-    if (min_level) {
-      coverer.set_min_level(atoi(min_level));
-    }
-
-    char* max_level = (char *)evhttp_find_header(&args, "max_level");
-    if (max_level) {
-      coverer.set_max_level(atoi(max_level));
-    }
-
-    char* level_mod = (char *)evhttp_find_header(&args, "level_mod");
-    if (level_mod) {
-      coverer.set_level_mod(atoi(level_mod));
-    }
-
-    char* max_cells = (char *)evhttp_find_header(&args, "max_cells");
-    if (max_cells) {
-      coverer.set_max_cells(atoi(max_cells));
-    }
-
-    coverer.GetCovering(polygon, &cellids_vector); 
   }
 
   printf("\n");

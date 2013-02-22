@@ -205,7 +205,7 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
         min_level = (char *)evhttp_find_header(&args, "mac_level");
       }
       if (min_level == NULL) {
-        min_level = "12";
+        min_level = "14";
       }
 
       cellids_vector.push_back(S2CellId::FromPoint(s2points_vector[0]).parent(atoi(min_level)));

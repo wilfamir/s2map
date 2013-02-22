@@ -233,16 +233,10 @@ processBounds: function(bounds) {
   this.map.setView(centerPoint, zoom);
 },
 
-renderPolygon: function(polygon, bounds) {
-  this.resetDisplay();
-
-  this.layerGroup.addLayer(polygon);
-
-  this.processBounds(bounds);
-
+renderCovering: function(latlngs) {
   if (this.showS2Covering()) {
     var data = {
-      'points': _(polygon.getLatLngs()).map(function(ll) { return ll.lat + "," + ll.lng; }).join(',')
+      'points': _(latlngs).map(function(ll) { return ll.lat + "," + ll.lng; }).join(',')
     };
 
     if (this.$minLevel.val()) {
@@ -268,6 +262,16 @@ renderPolygon: function(polygon, bounds) {
   }
 },
 
+renderPolygon: function(polygon, bounds) {
+  this.resetDisplay();
+
+  this.layerGroup.addLayer(polygon);
+
+  this.processBounds(bounds);
+
+  this.renderCovering(polygon.getLatLngs());
+},
+
 boundsCallback: function() {
   var bboxstr = this.$boundsInput.val() || this.placeholder;
 
@@ -284,10 +288,18 @@ boundsCallback: function() {
   }
 
   if (points.length == 1) {
+    var regex2 = /@(\d+)$/;
+    var matches = bboxstr.match(regex2);
+    if (matches) {
+      this.$minLevel.val(matches[1]);
+      this.$s2coveringButton.attr('checked', 'checked');
+    }
+
     var ll = points[0];
     this.map.setView(ll, 15);
     var marker = new L.Marker(ll);
     this.renderMarkers([marker]);
+    this.renderCovering([ll]);
   } else if (this.inPolygonMode()) {
     if (points.length == 2) {
        var ll1 = points[0]
@@ -433,7 +445,8 @@ initMapPage: function() {
   this.placeholder = _.first(_.shuffle(placeholders));
   this.$boundsInput.attr('placeholder', this.placeholder);
 
-  var points = window.location.hash.substring(1)
+  var points = window.location.hash.substring(1) ||
+	  window.location.search.substring(1);
   if (!!points) {
     this.$boundsInput.val(points);
   }

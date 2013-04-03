@@ -206,8 +206,6 @@ getPoints: function(tokens) {
   },
 
 renderMarkers: function(points) {
-  this.resetDisplay();
-
   var bounds = new L.LatLngBounds(_.map(points, function(p) {
     return p.getLatLng();
   }));
@@ -286,6 +284,8 @@ boundsCallback: function() {
     this.idsCallback();
     return;
   }
+  
+  this.resetDisplay();
 
   if (points.length == 1) {
     var regex2 = /@(\d+)$/;
@@ -330,9 +330,23 @@ boundsCallback: function() {
       var distance = this.distanceBetween(a, b);
       this.addInfo(a + ' --> ' + b + '<br/>--- distance: ' + distance + 'm');
     }, this))
-  } else if (this.inPointMode()) {
-    var markers = _.map(points, function(p) {
-      return new L.Marker(p);
+  } 
+
+  var dotIcon = L.icon({
+    iconAnchor: [5, 5],
+    iconUrl: '/img/blue-dot.png',
+  })
+  var markerOpts = {}
+  if (!this.inPointMode()) {
+  //if (this.inPolygonMode()) {
+    markerOpts['icon'] = dotIcon;
+  }
+
+  if (points.length > 1) {
+    var markers = _.map(points, function(p, index) {
+      var marker = new L.Marker(p, markerOpts);
+      marker.bindPopup('Point ' + (index  + 1) + ': ' + p.lat + ',' + p.lng);
+      return marker;
     });
     this.renderMarkers(markers);
   }

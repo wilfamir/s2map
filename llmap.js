@@ -349,15 +349,10 @@ initialize: function() {
   var mqTilesAttr = 'Tiles &copy; <a href="http://www.mapquest.com/" target="_blank">MapQuest</a> <img src="http://developer.mapquest.com/content/osm/mq_logo.png" />';
   var osmAttr = '&copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>';
 
+ var stamenAttr = 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, under <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a>. Data by <a href="http://openstreetmap.org">OpenStreetMap</a>, under <a href="http://creativecommons.org/licenses/by-sa/3.0">CC BY SA</a>.'
+ var layer = new L.StamenTileLayer("toner-lite");
   var opts = {
-    layers: new L.TileLayer(
-      'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
-      {
-        subdomains: '1234',
-        type: 'osm',
-        attribution: 'Map data ' + osmAttr + ', ' + mqTilesAttr
-      }
-    ),
+    layers: layer,
     attributionControl: false,
     zoomControl: false
   }
@@ -368,6 +363,7 @@ initialize: function() {
   this.map.addControl(zoom);
 
   var attribution = new L.Control.Attribution();
+  attribution.addAttribution(stamenAttr);
   attribution.addAttribution("<a href=\"http://code.google.com/p/s2-geometry-library/\">S2</a>");
   attribution.addAttribution("<a href=\"/README.html\">About</a>");
   this.map.addControl(attribution);

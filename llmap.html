@@ -10,7 +10,7 @@
 <script type="text/javascript" src="thirdparty/jquery.js"></script>
     <script type="text/javascript" src="thirdparty/underscore.js"></script>
     <script type="text/javascript" src="thirdparty/backbone-min.js"></script>
-    <script type="text/javascript" src="llmap.js"></script>
+    <script type="text/javascript" src="llmap2.js"></script>
 
 <script type="text/javascript">
 
@@ -108,10 +108,21 @@ a.button:active span {
   padding-left: 48px;
 }
 
+.basemapSelectorBox {
+  position: fixed;
+  left: 210px;
+  z-index: 10000;
+}
+
     </style>
   </head>
   <body>
     <div id="map" class="map"></div>
+
+    <div class="basemapSelectorBox">
+      <select class="basemapSelector"></select>
+    </div>
+
 
     <div class="controlsBox">
       <div class="controls">

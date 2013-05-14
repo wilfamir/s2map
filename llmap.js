@@ -123,10 +123,12 @@ getPoints: function(tokens) {
    * @param {fourSq.api.models.geo.S2Response} cell
    * @return {L.Polygon}
    */
-  renderCell: function(cell, color, extraDesc) {
+  renderCell: function(cell, color, extraDesc, opacity) {
     if (!color) {
       color = "#ff0000"
     }
+
+    opacity = opacity || 0.2;
 
     var description = this.cellDescription(cell)
     if (extraDesc) {
@@ -145,7 +147,7 @@ getPoints: function(tokens) {
         color: color,
         weight: 1,
         fill: true,
-        fillOpacity: 0.2
+        fillOpacity: opacity
       });
     polygon.bindPopup(description);
 
@@ -520,13 +522,14 @@ initMapPage: function() {
  * @param {Array.<fourSq.api.models.geo.S2Response>} cells
  * @return {Array.<L.Polygon>}
  */
-renderCellsForHeatmap: function(cellColorMap, cellDescMap, cells) {
+renderCellsForHeatmap: function(cellColorMap, cellDescMap, cellOpacityMap, cells) {
   var polygons = _(cells).filter(function(cell) { return cell.token != "X"; })
     .map(_.bind(function(c) {
       var color = cellColorMap[c.token] || cellColorMap[c.id] || cellColorMap[c.id_signed];
+      var opacity = cellOpacityMap[c.token] || cellOpacityMap[c.id] || cellOpacityMap[c.id_signed];
       if (color) { color = '#' + color; }
       var desc = cellDescMap[c.token] || cellDescMap[c.id] || cellDescMap[c.id_signed];
-      return this.renderCell(c, color, desc);
+      return this.renderCell(c, color, desc, opacity);
     }, this));
 
   var bounds = null;
@@ -539,10 +542,10 @@ renderCellsForHeatmap: function(cellColorMap, cellDescMap, cells) {
     this.map.fitBounds(bounds);
 },
 
-renderHeatmapHelper: function(data) {
-  var lines = data.split('\n');
+renderHeatmapHelper: function(lines) {
 
   var cellColorMap = {};
+  var cellOpacityMap = {};
   var cellDescMap = {};
   var cells = []
   _(lines).map(function(line) {
@@ -550,8 +553,10 @@ renderHeatmapHelper: function(data) {
     var cell = parts[0];
     var color = parts[1];
     var desc = parts[2];
+    var opacity = parts[3] || 0.5;
     cells.push(cell);
     cellColorMap[cell] = color;
+    cellOpacityMap[cell] = opacity;
     if (desc) {
       cellDescMap[cell] = desc;
     }
@@ -564,20 +569,30 @@ renderHeatmapHelper: function(data) {
     data: {
       'id': cells.join(',')
     },
-    success: _.bind(this.renderCellsForHeatmap, this, cellColorMap, cellDescMap)
+    success: _.bind(this.renderCellsForHeatmap, this, cellColorMap, cellDescMap, cellOpacityMap)
   });
 },
 
 renderHeatmap: function(url) {
-  $.ajax({
-    url: baseurl('/fetch'),
-    // type: method,
-    type: 'GET',
-    data: {
-      'url': url
-    },
-    success: _.bind(this.renderHeatmapHelper, this)
-  });
+  console.log(url);
+  if (url.indexOf('http') == 0) {
+	  $.ajax({
+	    url: baseurl('/fetch'),
+	    // type: method,
+	    type: 'GET',
+	    data: {
+	      'url': url
+	    },
+	    success: _.bind(function(data) {
+	      var lines = data.split('\n');
+              this.renderHeatmapHelper(lines);
+            }, this)
+	  });
+  } else {
+    console.log(url);
+    var lines = url.split(';');
+    this.renderHeatmapHelper(lines);
+  }
 }
 });
 

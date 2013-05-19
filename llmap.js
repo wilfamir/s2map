@@ -269,12 +269,43 @@ renderPolygon: function(polygon, bounds) {
 
   this.processBounds(bounds);
 
-  this.renderCovering(polygon.getLatLngs());
+  if (typeof(polygon.getLatLngs) != "undefined") {
+    this.renderCovering(polygon.getLatLngs());
+  }
 },
 
 boundsCallback: function() {
+  console.log('kill me');
   var bboxstr = this.$boundsInput.val() || this.placeholder;
+   
+  try {
+    console.log('trying json parse')
+    geojsonFeature = JSON.parse(bboxstr);
+  } catch(e) {
+   console.log(e)
+   console.log('could not parse')
+   geojsonFeature = null;
+  }
 
+  if (geojsonFeature) {
+    console.log(geojsonFeature);
+    if (geojsonFeature['type'] && geojsonFeature['coordinates']) {
+      geojsonFeature = {
+        'type': 'Feature',
+        'properties': {},
+        'geometry': geojsonFeature
+      }
+    }
+    console.log(geojsonFeature)
+
+    if (geojsonFeature['type'] && geojsonFeature['geometry']) {
+      console.log('trying to load')
+      polygon = L.geoJson(geojsonFeature);
+      this.renderPolygon(polygon, polygon.getBounds())
+      return;
+    }
+  }
+  
   var regex = /[+-]?\d+\.\d+/g;
   var bboxParts = bboxstr.match(regex);
 

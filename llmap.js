@@ -48,6 +48,16 @@ isReverseOrder: function() {
   return this.$reverseOrder.is(':checked');
 },
 
+
+setReverseOrder: function() {
+  return this.$reverseOrder.attr("checked", "checked");
+},
+
+setNormalOrder: function() {
+  return this.$normalOrder.attr("checked", "checked");
+},
+
+
 /*
  * @returns {bool}
  */
@@ -55,12 +65,22 @@ inPolygonMode: function() {
   return this.$polygonMode.is(':checked');
 },
 
+setPolygonMode: function() {
+  return this.$polygonMode.attr('checked', 'checked');
+},
+
+
 /*
  * @returns {bool}
  */
 inPointMode: function() {
   return this.$pointMode.is(':checked');
 },
+
+setPointMode: function() {
+  return this.$pointMode.attr('checked', 'checked');
+},
+
 
 showS2Covering: function() {
   return this.$s2coveringButton.is(':checked')
@@ -76,6 +96,9 @@ shouldClear: function() {
  */
 inLineMode: function() {
   return this.$lineMode.is(':checked');
+},
+setLineMode: function() {
+  return this.$lineMode.attr('checked', 'checked');
 },
 
 resetDisplay: function() {
@@ -95,7 +118,21 @@ getPoints: function(tokens) {
     return points;
   }
 
+  if ((tokens.length % 2) != 0) {
+    window.alert("extracted an odd number of number tokens, not plotting");
+    return points;
+  }
+
+  this.setHash(tokens);
+
   var isReverseOrder = this.isReverseOrder();
+  for (var i = 0; i < tokens.length; i+=2) {
+    if (tokens[i] > 90) {
+      isReverseOrder = true;
+      this.setReverseOrder();
+    }
+  }
+
   _(_.range(0, tokens.length, 2)).each(function(i) {
     if (isReverseOrder) {
       points.push(
@@ -409,6 +446,15 @@ baseMaps: function() {
       ),
       mapboxTilesAttr 
     ],
+    ["Mapbox Satellite",
+      new L.TileLayer(
+        'http://{s}.tiles.mapbox.com/v3/foursquare.map-7v8eu5p1/{z}/{x}/{y}.png',
+        {
+          subdomains: 'abcd',
+        }
+      ),
+      mapboxTilesAttr 
+    ],
     ["Mapquest Aerial", 
       new L.TileLayer(
         'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
@@ -486,6 +532,7 @@ initialize: function() {
   this.$infoArea = this.$el.find('.info');
 
   this.$reverseOrder = this.$el.find('.lnglatMode');
+  this.$normalOrder = this.$el.find('.latlngMode');
 
   this.$lineMode = this.$el.find('.lineMode');
   this.$polygonMode = this.$el.find('.polygonMode');
@@ -541,12 +588,92 @@ initMapPage: function() {
   this.placeholder = _.first(_.shuffle(placeholders));
   this.$boundsInput.attr('placeholder', this.placeholder);
 
-  var points = window.location.hash.substring(1) ||
-	  window.location.search.substring(1);
-  if (!!points) {
-    this.$boundsInput.val(points);
-  }
+  this.parseHash(window.location.hash.substring(1) || window.location.search.substring(1));
   this.boundsCallback();
+},
+
+setHash: function(tokens) {
+  var h = "";
+  function addParam(k, v) {
+    if (h != "") {
+      h+= "&"
+    }
+    h += k + "=" + v;
+  }
+
+  if (this.isReverseOrder()) {
+    addParam("order", "lnglat")
+  } else {
+    addParam("order", "latlng")
+  }
+
+  if (this.inPolygonMode()) {
+    addParam("mode", "polygon");
+  } else if (this.inLineMode()) {
+    addParam("mode", "line");
+  } else {
+    addParam("mode", "point");
+  }
+
+  if (this.showS2Covering()) {
+    addParam("s2", 'true');
+    addParam("s2_min_level", this.$minLevel.val());
+    addParam("s2_max_level", this.$maxLevel.val());
+    addParam("s2_max_cells", this.$maxCells.val());
+    addParam("s2_level_mod", this.$levelMod.val());
+  } else {
+    addParam("s2", 'false');
+  }
+
+  addParam("points", tokens.join(','))
+  window.location.hash = h;
+},
+
+deparam: function (querystring) {
+    // remove any preceding url and split
+      querystring = querystring.substring(querystring.indexOf('?')+1).split('&');
+        var params = {}, pair, d = decodeURIComponent;
+          // march and parse
+            for (var i = querystring.length - 1; i >= 0; i--) {
+                  pair = querystring[i].split('=');
+                      params[d(pair[0])] = d(pair[1]);
+                        }
+
+                          return params;
+},
+
+parseHash: function(hash) {
+  if (hash.indexOf('=') == -1) {
+    this.$boundsInput.val(hash);
+    return;
+  }
+
+  var params = this.deparam(hash);
+
+  if (params.order == 'lnglat') {
+    this.setReverseOrder();
+  } else {
+    this.setNormalOrder();
+  }
+
+  if (params.mode == 'line') {
+    this.setLineMode();
+  } else if (params.mode == 'point') {
+    this.setPointMode();
+  } else {
+    this.setPolygonMode();
+  }
+
+  if (params.s2 == 'true') {
+    this.$s2coveringButton.attr('checked', 'checked');
+  }
+
+  this.$maxCells.val(params.max_cells);
+  this.$minLevel.val(params.min_level);
+  this.$maxLevel.val(params.max_level);
+  this.$levelMod.val(params.level_mod);
+
+  this.$boundsInput.val(params.points);
 },
 
 /** 

@@ -409,6 +409,15 @@ baseMaps: function() {
       ),
       mapboxTilesAttr 
     ],
+    ["Mapbox Satellite",
+      new L.TileLayer(
+        'http://{s}.tiles.mapbox.com/v3/foursquare.map-7v8eu5p1/{z}/{x}/{y}.png',
+        {
+          subdomains: 'abcd',
+        }
+      ),
+      mapboxTilesAttr 
+    ],
     ["Mapquest Aerial", 
       new L.TileLayer(
         'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',

@@ -324,9 +324,24 @@ boundsCallback: function() {
    geojsonFeature = null;
   }
 
+  try {
+    var wkt = new Wkt.Wkt();
+    console.log(bboxstr);
+    wktFeature = wkt.read(bboxstr);
+  } catch(e) {
+   console.log(e)
+   console.log('could not parse as wkt')
+   wktFeature = null;
+  }
+
+
   var points = [];
 
-  if (geojsonFeature) {
+  if (wktFeature) {
+    polygon = wkt.toObject({color: 'blue'});
+    console.log(polygon);
+    this.renderPolygon(polygon, polygon.getBounds())
+  } else if (geojsonFeature) {
     console.log(geojsonFeature);
     if (geojsonFeature['type'] && geojsonFeature['coordinates']) {
       geojsonFeature = {
@@ -340,7 +355,6 @@ boundsCallback: function() {
     if (geojsonFeature['type'] && geojsonFeature['geometry']) {
       console.log('trying to load')
       polygon = L.geoJson(geojsonFeature);
-      this.renderPolygon(polygon, polygon.getBounds())
       console.log(geojsonFeature['geometry']['coordinates'])
       console.log(_.flatten(geojsonFeature['geometry']['coordinates']))
       coords = _.flatten(geojsonFeature['geometry']['coordinates'])
@@ -349,6 +363,8 @@ boundsCallback: function() {
       }
       this.setReverseOrder();
     }
+    this.renderPolygon(polygon, polygon.getBounds())
+    return;
   } else {
     var regex = /[+-]?\d+\.\d+/g;
     var bboxParts = bboxstr.match(regex);
@@ -632,7 +648,7 @@ setHash: function(tokens) {
     addParam("s2", 'false');
   }
 
-  addParam("points", tokens.join(','))
+  addParam("points", this.$boundsInput.val());
   window.location.hash = h;
 },
 

@@ -324,6 +324,8 @@ boundsCallback: function() {
    geojsonFeature = null;
   }
 
+  var points = [];
+
   if (geojsonFeature) {
     console.log(geojsonFeature);
     if (geojsonFeature['type'] && geojsonFeature['coordinates']) {
@@ -339,14 +341,20 @@ boundsCallback: function() {
       console.log('trying to load')
       polygon = L.geoJson(geojsonFeature);
       this.renderPolygon(polygon, polygon.getBounds())
-      return;
+      console.log(geojsonFeature['geometry']['coordinates'])
+      console.log(_.flatten(geojsonFeature['geometry']['coordinates']))
+      coords = _.flatten(geojsonFeature['geometry']['coordinates'])
+      for (var i = 0; i < coords.length; i+=2) {
+        points.push(new L.LatLng(coords[i+1], coords[i]));
+      }
+      this.setReverseOrder();
     }
-  }
-  
-  var regex = /[+-]?\d+\.\d+/g;
-  var bboxParts = bboxstr.match(regex);
+  } else {
+    var regex = /[+-]?\d+\.\d+/g;
+    var bboxParts = bboxstr.match(regex);
 
-  var points = this.getPoints(bboxParts);
+    points = this.getPoints(bboxParts);
+  }
 
   var polygonPoints = []
   if (points.length == 0) {
@@ -385,7 +393,6 @@ boundsCallback: function() {
     } else {
       polygonPoints = points; 
     }
-
     var polygon = new L.Polygon(polygonPoints,  
        {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
     this.renderPolygon(polygon, polygon.getBounds())

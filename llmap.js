@@ -337,11 +337,11 @@ boundsCallback: function() {
 
   var points = [];
 
-  if (wktFeature) {
+  /* if (wktFeature) {
     polygon = wkt.toObject({color: 'blue'});
     console.log(polygon);
-    this.renderPolygon(polygon, polygon.getBounds())
-  } else if (geojsonFeature) {
+    //this.renderPolygon(polygon, polygon.getBounds())
+  } else */ if (geojsonFeature) {
     console.log(geojsonFeature);
     if (geojsonFeature['type'] && geojsonFeature['coordinates']) {
       geojsonFeature = {

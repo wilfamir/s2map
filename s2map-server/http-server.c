@@ -290,6 +290,7 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
 
 size_t write_data(void *ptr, size_t size, size_t nmemb, struct evbuffer *evb) {
   size_t toWrite = size * nmemb;
+  cout << ptr;
   evbuffer_add(evb, ptr, toWrite);
   return toWrite;
 }
@@ -299,7 +300,6 @@ size_t write_data(void *ptr, size_t size, size_t nmemb, struct evbuffer *evb) {
 static void
 fetch_request_cb(struct evhttp_request *req, void *arg)
 {
-
   struct evkeyvalq    args;
 	const char *uri = evhttp_request_get_uri(req);
   evhttp_parse_query(uri, &args);
@@ -313,6 +313,7 @@ fetch_request_cb(struct evhttp_request *req, void *arg)
     if (curl) {
 	    evb = evbuffer_new();
       curl_easy_setopt(curl, CURLOPT_URL, url);
+      curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
       curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
       curl_easy_setopt(curl, CURLOPT_WRITEDATA, evb);
       res = curl_easy_perform(curl);

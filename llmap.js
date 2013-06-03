@@ -212,6 +212,7 @@ getPoints: function(tokens) {
       }
       bounds = bounds.extend(p.getBounds());
     });
+    this.map.setView(bounds.getCenter());
     this.map.fitBounds(bounds);
   },
 
@@ -230,18 +231,15 @@ getPoints: function(tokens) {
       }
       return true;
     });
-    var size = 75
-    _.range(0, idList.length, size).map(_.bind(function(start) {
-      $.ajax({
-        url: baseurl('/s2info'),
-        type: method,
-        dataType: 'json',
-        data: {
-          'id': idList.slice(start, start+size).join(',')
-        },
-        success: _.bind(this.renderS2Cells, this)
-      });
-    }, this));
+    $.ajax({
+      url: baseurl('/s2info'),
+      type: method,
+      dataType: 'json',
+      data: {
+        'id': idList.join(',')
+      },
+      success: _.bind(this.renderS2Cells, this)
+    });
   },
 
 renderMarkers: function(points) {
@@ -363,8 +361,11 @@ boundsCallback: function() {
       }
       this.setReverseOrder();
     }
-    this.renderPolygon(polygon, polygon.getBounds())
-    return;
+
+    if (polygon) {
+      this.renderPolygon(polygon, polygon.getBounds())
+      return;
+    }
   } else {
     var regex = /[+-]?\d+\.\d+/g;
     var bboxParts = bboxstr.match(regex);

@@ -428,7 +428,7 @@ boundsCallback: function() {
   } else if (this.inCircleMode()) {
     var radius = this.$radiusInput.val();
     _.each(points, function(point) {
-      var step = 2*Math.PI/20;  // see note 1
+      var step = 2*Math.PI/200;
       var h = point.lat;
       var k = point.lng;
       var r = radius / 111320.0
@@ -436,7 +436,7 @@ boundsCallback: function() {
       var cPoints = []
       for (var theta = 0; theta < 2*Math.PI; theta += step) {
          var lat = h + r*Math.cos(theta);
-         var lng = k - r*Math.sin(theta);    //note 2.
+         var lng = k - r*Math.sin(theta);
          cPoints.push([lat, lng])
       }
       var polygon = new L.Polygon(cPoints,

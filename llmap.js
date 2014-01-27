@@ -443,8 +443,8 @@ boundsCallback: function() {
       var polygon = new L.Polygon(cPoints,
          {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
       this.renderPolygon(polygon, polygon.getBounds(), true);
-      if (!!bounds) {
-        bounds = polygon.getBounds()
+      if (bounds == null) {
+        bounds = polygon.getBounds();
       } else {
         bounds = bounds.extend(polygon.getBounds());
       }

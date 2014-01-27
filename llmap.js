@@ -307,8 +307,10 @@ renderCovering: function(latlngs) {
   }
 },
 
-renderPolygon: function(polygon, bounds) {
-  this.resetDisplay();
+renderPolygon: function(polygon, bounds, dontClear) {
+  if (!dontClear) {
+    this.resetDisplay();
+  }
 
   this.layerGroup.addLayer(polygon);
 
@@ -439,7 +441,7 @@ boundsCallback: function() {
       }
       var polygon = new L.Polygon(cPoints,
          {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
-      this.renderPolygon(polygon, polygon.getBounds())
+      this.renderPolygon(polygon, polygon.getBounds(), true);
     }, this);
   } else if (this.inLineMode()) {
     var polyline = new L.Polyline(points,
@@ -547,6 +549,14 @@ updateMode: function() {
   }
 },
 
+updateS2CoverMode: function() {
+  if (this.showS2Covering()) {
+    this.$s2options.show();
+  } else {
+    this.$s2options.hide();
+  }
+},
+
 getRadius: function() {
   return this.$radiusInput.val();
 },
@@ -631,11 +641,7 @@ initialize: function() {
   this.$s2options = this.$el.find('.s2options');
   this.$s2coveringButton = this.$el.find('.s2cover');
   this.$s2coveringButton.change(_.bind(function() {
-    if (this.showS2Covering()) {
-      this.$s2options.show();
-    } else {
-      this.$s2options.hide();
-    }
+    this.updateS2CoverMode();
   }, this));
 
   this.$maxCells = this.$el.find('.max_cells');
@@ -742,6 +748,7 @@ parseHash: function(hash) {
   }
 
   this.updateMode();
+  this.updateS2CoverMode();
 
   if (params.s2 == 'true') {
     this.$s2coveringButton.attr('checked', 'checked');

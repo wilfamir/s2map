@@ -101,6 +101,16 @@ setLineMode: function() {
   return this.$lineMode.attr('checked', 'checked');
 },
 
+/*
+ * @returns {bool}
+ */
+inCircleMode: function() {
+  return this.$circleMode.is(':checked');
+},
+setCircleMode: function() {
+  return this.$circleMode.attr('checked', 'checked');
+},
+
 resetDisplay: function() {
   if (this.shouldClear()) {
     this.layerGroup.clearLayers();
@@ -148,15 +158,15 @@ getPoints: function(tokens) {
 },
 
   cellDescription: function(cell) {
-    return 'cell id (unsigned): ' + cell.id + '<br>' + 
-      'cell id (signed): ' + cell.id_signed + '<br>' + 
-      'cell token: ' + cell.token + '<br>' + 
-  //    'face: ' + cell.face + '<br>' + 
-      'level: ' + cell.level + '<br>' + 
-      'center: ' + cell.ll.lat + "," + cell.ll.lng; 
+    return 'cell id (unsigned): ' + cell.id + '<br>' +
+      'cell id (signed): ' + cell.id_signed + '<br>' +
+      'cell token: ' + cell.token + '<br>' +
+  //    'face: ' + cell.face + '<br>' +
+      'level: ' + cell.level + '<br>' +
+      'center: ' + cell.ll.lat + "," + cell.ll.lng;
   },
 
-  /** 
+  /**
    * @param {fourSq.api.models.geo.S2Response} cell
    * @return {L.Polygon}
    */
@@ -180,7 +190,7 @@ getPoints: function(tokens) {
     });
 
     var polygon = new L.Polygon(points,
-      { 
+      {
         color: color,
         weight: 1,
         fill: true,
@@ -192,7 +202,7 @@ getPoints: function(tokens) {
     return polygon;
   },
 
-  /** 
+  /**
    * @param {Array.<fourSq.api.models.geo.S2Response>} cells
    * @return {Array.<L.Polygon>}
    */
@@ -218,7 +228,7 @@ getPoints: function(tokens) {
 
   idsCallback: function() {
     this.resetDisplay();
-    
+
     var ids = this.$boundsInput.val()
       .replace(/^\s+/g, '')
       .replace(/ /g, ',')
@@ -250,7 +260,7 @@ renderMarkers: function(points) {
   _.each(points, _.bind(function(p) {
     this.layerGroup.addLayer(p);
   }, this));
-  
+
   this.processBounds(bounds);
 },
 
@@ -260,7 +270,7 @@ processBounds: function(bounds) {
   }
   this.previousBounds = bounds;
 
-  var zoom = this.map.getBoundsZoom(bounds) - 1;      
+  var zoom = this.map.getBoundsZoom(bounds) - 1;
 
   // TODO: add control offset logic?
   var centerPixel = this.map.project(bounds.getCenter(), zoom);
@@ -312,7 +322,7 @@ renderPolygon: function(polygon, bounds) {
 boundsCallback: function() {
   console.log('kill me');
   var bboxstr = this.$boundsInput.val() || this.placeholder;
-   
+
   try {
     console.log('trying json parse')
     geojsonFeature = JSON.parse(bboxstr);
@@ -379,10 +389,10 @@ boundsCallback: function() {
     this.idsCallback();
     return;
   }
-  
+
   this.resetDisplay();
 
-  if (points.length == 1) {
+  if (points.length == 1 && !this.inCircleMode()  ) {
     var regex2 = /@(\d+)$/;
     var matches = bboxstr.match(regex2);
     if (matches) {
@@ -408,13 +418,31 @@ boundsCallback: function() {
 
       polygonPoints = [nw, ne, se, sw];
     } else {
-      polygonPoints = points; 
+      polygonPoints = points;
     }
-    var polygon = new L.Polygon(polygonPoints,  
+    var polygon = new L.Polygon(polygonPoints,
        {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
     this.renderPolygon(polygon, polygon.getBounds())
+  } else if (this.inCircleMode()) {
+    var radius = this.$radiusInput.val();
+    _.each(points, function(point) {
+      var step = 2*Math.PI/20;  // see note 1
+      var h = point.lat;
+      var k = point.lng;
+      var r = radius / 111320.0
+
+      var cPoints = []
+      for (var theta = 0; theta < 2*Math.PI; theta += step) {
+         var lat = h + r*Math.cos(theta);
+         var lng = k - r*Math.sin(theta);    //note 2.
+         cPoints.push([lat, lng])
+      }
+      var polygon = new L.Polygon(cPoints,
+         {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
+      this.renderPolygon(polygon, polygon.getBounds())
+    }, this);
   } else if (this.inLineMode()) {
-    var polyline = new L.Polyline(points,  
+    var polyline = new L.Polyline(points,
      {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2});
     this.renderPolygon(polyline, polyline.getBounds());
 
@@ -424,7 +452,7 @@ boundsCallback: function() {
       var distance = this.distanceBetween(a, b);
       this.addInfo(a + ' --> ' + b + '<br/>--- distance: ' + distance + 'm');
     }, this))
-  } 
+  }
 
   var dotIcon = L.icon({
     iconAnchor: [5, 5],
@@ -444,7 +472,7 @@ boundsCallback: function() {
     });
     this.renderMarkers(markers);
   }
- 
+
   // fourSq.api.services.Geo.s2cover({
   //     ne: ne.lat + ',' + ne.lng,
   //     sw: sw.lat + ',' + sw.lng
@@ -468,7 +496,7 @@ baseMaps: function() {
           subdomains: 'abcd',
         }
       ),
-      mapboxTilesAttr 
+      mapboxTilesAttr
     ],
     ["Mapbox Satellite",
       new L.TileLayer(
@@ -477,9 +505,9 @@ baseMaps: function() {
           subdomains: 'abcd',
         }
       ),
-      mapboxTilesAttr 
+      mapboxTilesAttr
     ],
-    ["Mapquest Aerial", 
+    ["Mapquest Aerial",
       new L.TileLayer(
         'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
         {
@@ -506,14 +534,31 @@ console.log(this.map.hasLayer(this.baseMap[1]));
   this.map.invalidateSize();
 },
 
+getMode: function() {
+  return $($.find('[name=mode]:checked')[0]).attr('data-mode');
+},
+
+updateMode: function() {
+  var mode = this.getMode();
+  if (mode == 'circle') {
+    $($.find('.circleOptions')[0]).show();
+  } else {
+    $($.find('.circleOptions')[0]).hide();
+  }
+},
+
+getRadius: function() {
+  return this.$radiusInput.val();
+},
+
 initialize: function() {
   this.baseMap = this.baseMaps[0];
-  
+
   var opts = {
     attributionControl: false,
     zoomControl: false
   }
- 
+
   this.map = new L.Map('map', opts);
   var zoom = new L.Control.Zoom()
   zoom.setPosition('topright');
@@ -561,11 +606,19 @@ initialize: function() {
   this.$lineMode = this.$el.find('.lineMode');
   this.$polygonMode = this.$el.find('.polygonMode');
   this.$pointMode = this.$el.find('.pointMode');
+  this.$circleMode = this.$el.find('.circleMode');
+
+  this.$radiusInput = this.$el.find('.radiusInput');
 
   this.$boundsButton = this.$el.find('.boundsButton');
   this.$boundsInput = this.$el.find('.boundsInput');
 
   this.$clearButton = this.$el.find('.clearMap');
+
+  this.$modeSelect = this.$el.find('[name=mode]');
+  this.$modeSelect.change(_.bind(function() {
+    this.updateMode();
+  }, this));
 
   this.$boundsButton.click(_.bind(this.boundsCallback, this));
   this.$boundsInput.keypress(/** @param {jQuery.Event} e */ _.bind(function(e) {
@@ -631,12 +684,10 @@ setHash: function(tokens) {
     addParam("order", "latlng")
   }
 
-  if (this.inPolygonMode()) {
-    addParam("mode", "polygon");
-  } else if (this.inLineMode()) {
-    addParam("mode", "line");
-  } else {
-    addParam("mode", "point");
+  addParam("mode", this.getMode());
+
+  if (this.getMode() == 'circle') {
+    addParam("radius", this.getRadius());
   }
 
   if (this.showS2Covering()) {
@@ -654,16 +705,16 @@ setHash: function(tokens) {
 },
 
 deparam: function (querystring) {
-    // remove any preceding url and split
-      querystring = querystring.substring(querystring.indexOf('?')+1).split('&');
-        var params = {}, pair, d = decodeURIComponent;
-          // march and parse
-            for (var i = querystring.length - 1; i >= 0; i--) {
-                  pair = querystring[i].split('=');
-                      params[d(pair[0])] = d(pair[1]);
-                        }
+  // remove any preceding url and split
+  querystring = querystring.substring(querystring.indexOf('?')+1).split('&');
+  var params = {}, pair, d = decodeURIComponent;
+  // march and parse
+  for (var i = querystring.length - 1; i >= 0; i--) {
+    pair = querystring[i].split('=');
+    params[d(pair[0])] = d(pair[1]);
+  }
 
-                          return params;
+  return params;
 },
 
 parseHash: function(hash) {
@@ -684,13 +735,19 @@ parseHash: function(hash) {
     this.setLineMode();
   } else if (params.mode == 'point') {
     this.setPointMode();
+  } else if (params.mode == 'circle') {
+    this.setCircleMode();
   } else {
     this.setPolygonMode();
   }
 
+  this.updateMode();
+
   if (params.s2 == 'true') {
     this.$s2coveringButton.attr('checked', 'checked');
   }
+
+  this.$radiusInput.val(params.radius);
 
   this.$maxCells.val(params.max_cells);
   this.$minLevel.val(params.min_level);
@@ -700,7 +757,7 @@ parseHash: function(hash) {
   this.$boundsInput.val(params.points);
 },
 
-/** 
+/**
  * @param {Array.<fourSq.api.models.geo.S2Response>} cells
  * @return {Array.<L.Polygon>}
  */

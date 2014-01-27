@@ -143,24 +143,29 @@ a.button:active span {
         <hr/>
 
         <label>
-          <input type="radio" name="mode" value="polygon" class="polygonMode" checked="checked"/>
+          <input type="radio" name="mode" value="polygon" class="polygonMode" data-mode="polygon" checked="checked"/>
           Polygon mode
         </label>
 
         <br/>
 
         <label>
-          <input type="radio" name="mode" value="line" class="lineMode"/>
+          <input type="radio" name="mode" value="line" class="lineMode" data-mode="line"/>
           Line mode
         </label>
 
 	<br/>
 
-	<label>
-          <input type="radio" name="mode" value="point" class="pointMode"/>
+        <label>
+          <input type="radio" name="mode" value="point" class="pointMode" data-mode="point"/>
           Point mode
         </label>
-
+	<br/>
+    
+        <label>
+          <input type="radio" name="mode" value="circle" class="circleMode" data-mode="circle"/>
+          Circle mode
+        </label>
 
         <hr/>
 
@@ -177,12 +182,15 @@ a.button:active span {
         </label>
 
         <div class="s2options" style="display: none">
-          <input size="2" class="min_level"> min_level <br/>
-          <input size="2" class="max_level"> max_level <br/>
-          <input size="2" class="max_cells"> max_cells <br/>
-          <input size="2" class="level_mod"> level_mod <br/>
+          <input size="2" class="min_level" value="1"> min_level <br/>
+          <input size="2" class="max_level" value="30"> max_level <br/>
+          <input size="2" class="max_cells" value="200"> max_cells <br/>
+          <input size="2" class="level_mod" value="1"> level_mod <br/>
         </div>
 
+        <div class="circleOptions" style="display: none">
+          <input size="5" class="radiusInput"> radius (meters)<br/>
+        </div>
       <br/>
 
       <textarea class="boundsInput" rows="18"></textarea><br/>

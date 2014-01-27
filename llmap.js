@@ -426,6 +426,7 @@ boundsCallback: function() {
        {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
     this.renderPolygon(polygon, polygon.getBounds())
   } else if (this.inCircleMode()) {
+    var bounds = null;
     var radius = this.$radiusInput.val();
     _.each(points, function(point) {
       var step = 2*Math.PI/200;
@@ -442,7 +443,13 @@ boundsCallback: function() {
       var polygon = new L.Polygon(cPoints,
          {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
       this.renderPolygon(polygon, polygon.getBounds(), true);
+      if (!!bounds) {
+        bounds = polygon.getBounds()
+      } else {
+        bounds = bounds.extend(polygon.getBounds());
+      }
     }, this);
+    map.fitBounds(bounds);
   } else if (this.inLineMode()) {
     var polyline = new L.Polyline(points,
      {color: "#0000ff", weight: 4, fill: false, fillOpacity: 0.2});

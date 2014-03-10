@@ -189,6 +189,8 @@ getPoints: function(tokens) {
       return new L.LatLng(ll.lat, ll.lng);
     });
 
+    console.log(points);
+
     var polygon = new L.Polygon(points,
       {
         color: color,

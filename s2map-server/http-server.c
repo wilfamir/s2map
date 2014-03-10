@@ -199,24 +199,45 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
       ).ToPoint());
     }
 
-    if (s2points_vector.size() == 1) {
-      char* min_level = (char *)evhttp_find_header(&args, "min_level");
-      if (min_level == NULL) {
-        min_level = (char *)evhttp_find_header(&args, "max_level");
-      }
-      if (min_level == NULL) {
-        min_level = "14";
-      }
-
-      int min_level_int = atoi(min_level);
+    int min_level_int = NULL;
+    char* min_level = (char *)evhttp_find_header(&args, "min_level");
+    if (min_level) {
+      min_level_int = atoi(min_level);
       if (min_level_int > S2::kMaxCellLevel) {
         min_level_int = S2::kMaxCellLevel;
       }
       if (min_level_int < 0) {
         min_level_int = 0;
       }
+    }
 
-      cellids_vector.push_back(S2CellId::FromPoint(s2points_vector[0]).parent(min_level_int));
+    int max_level_int = NULL;
+    char* max_level = (char *)evhttp_find_header(&args, "max_level");
+    if (max_level) {
+      max_level_int = atoi(max_level);
+      if (max_level_int > S2::kMaxCellLevel) {
+        max_level_int = S2::kMaxCellLevel;
+      }
+      if (max_level_int < 0) {
+        max_level_int = 0;
+      }
+    }
+      
+    char* level_mod = (char *)evhttp_find_header(&args, "level_mod");
+    int level_mod_int = 1;
+    if (level_mod) {
+      level_mod_int = atoi(level_mod);
+    }
+
+    printf("%d\n", s2points_vector.size());
+    if (s2points_vector.size() == 1) {
+      if (max_level_int == NULL) {
+        max_level_int = min_level_int;
+      }
+
+      for (int i = min_level_int; i <= max_level_int; i += level_mod_int) {
+        cellids_vector.push_back(S2CellId::FromPoint(s2points_vector[0]).parent(i));
+      }
     } else {
       for (int i = 0; i < s2points_vector.size(); i++) {
         builder->AddEdge(
@@ -231,33 +252,16 @@ s2cover_request_cb(struct evhttp_request *req, void *arg)
 
       S2RegionCoverer coverer;
 
-      char* min_level = (char *)evhttp_find_header(&args, "min_level");
-      if (min_level) {
-	int min_level_int = atoi(min_level);
-	if (min_level_int > S2::kMaxCellLevel) {
-	  min_level_int = S2::kMaxCellLevel;
-        }
-        if (min_level_int < 0) {
-          min_level_int = 0;
-        }
+      if (min_level_int != NULL) {
         coverer.set_min_level(min_level_int);
       }
-
-      char* max_level = (char *)evhttp_find_header(&args, "max_level");
-      if (max_level) {
-	int max_level_int = atoi(max_level);
-	if (max_level_int > S2::kMaxCellLevel) {
-	  max_level_int = S2::kMaxCellLevel;
-        }
-        if (max_level_int < 0) {
-          max_level_int = 0;
-        }
+      
+      if (max_level_int != NULL) {
         coverer.set_max_level(max_level_int);
       }
 
-      char* level_mod = (char *)evhttp_find_header(&args, "level_mod");
-      if (level_mod) {
-        coverer.set_level_mod(atoi(level_mod));
+      if (level_mod_int) {
+        coverer.set_level_mod(level_mod_int);
       }
 
       char* max_cells = (char *)evhttp_find_header(&args, "max_cells");

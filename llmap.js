@@ -431,18 +431,7 @@ boundsCallback: function() {
     var bounds = null;
     var radius = this.$radiusInput.val();
     _.each(points, function(point) {
-      var step = 2*Math.PI/200;
-      var h = point.lat;
-      var k = point.lng;
-      var r = radius / 111320.0
-
-      var cPoints = []
-      for (var theta = 0; theta < 2*Math.PI; theta += step) {
-         var lat = h + r*Math.cos(theta);
-         var lng = k - r*Math.sin(theta);
-         cPoints.push([lat, lng])
-      }
-      var polygon = new L.Polygon(cPoints,
+      var polygon = LGeo.circle(point, radius,
          {color: "#0000ff", weight: 1, fill: true, fillOpacity: 0.2});
       this.renderPolygon(polygon, polygon.getBounds(), true);
       if (bounds == null) {

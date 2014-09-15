@@ -491,9 +491,9 @@ baseMaps: function() {
   return [
      ["OSM Light",
       new L.TileLayer(
-        'http://{s}.tiles.mapbox.com/v3/foursquare.map-t2z7w2jz/{z}/{x}/{y}.png',
+        'http://d.tiles.mapbox.com/v3/foursquare.map-t2z7w2jz/{z}/{x}/{y}.png',
         {
-          subdomains: 'abcd',
+          subdomains: 'abcd'
         }
       ),
       mapboxTilesAttr

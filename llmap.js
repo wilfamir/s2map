@@ -309,12 +309,27 @@ renderCovering: function(latlngs) {
   }
 },
 
+downloadData: function(data) {
+  var downloadLink = $('<a></a>')[0];
+  var json = JSON.stringify(data);
+  var blob = new Blob([json], {type: "octet/stream"});
+  var url = window.URL.createObjectURL(blob);
+  downloadLink.href = url;
+  downloadLink.download = 's2map-' + new Date() + '.geojson';
+  downloadLink.click();
+},
+
 renderPolygon: function(polygon, bounds, dontClear) {
   if (!dontClear) {
     this.resetDisplay();
   }
 
   this.layerGroup.addLayer(polygon);
+ 
+  var downloadLink = $('<a href="#">Download as GeoJSON</a>');
+  polygon.bindPopup(downloadLink.click(_.bind(function() {
+    this.downloadData(polygon.toGeoJSON());
+  }, this))[0]);
 
   this.processBounds(bounds);
 
@@ -465,11 +480,15 @@ boundsCallback: function() {
   }
 
   if (points.length > 1) {
-    var markers = _.map(points, function(p, index) {
+    var markers = _.map(points, _.bind(function(p, index) {
       var marker = new L.Marker(p, markerOpts);
-      marker.bindPopup('Point ' + (index  + 1) + ': ' + p.lat + ',' + p.lng);
+      var downloadLink = $('<div>Point ' + (index  + 1) + ': ' + p.lat + ',' + p.lng + '<br/><a href="#">Download all points as GeoJSON</a></div>');
+      marker.bindPopup(downloadLink.click(_.bind(function() {
+        this.downloadData(this.layerGroup.toGeoJSON());
+      }, this))[0]);
+
       return marker;
-    });
+    }, this));
     this.renderMarkers(markers);
   }
 
@@ -524,7 +543,6 @@ baseMaps: function() {
 }(),
 
 switchBaseMap: function(baseMapEntry) {
-console.log(this.map.hasLayer(this.baseMap[1]));
   this.map.removeLayer(this.baseMap[1]);
   this.attribution.removeAttribution(this.baseMap[2]);
 

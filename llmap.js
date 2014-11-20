@@ -1,5 +1,5 @@
 var baseurl = function(part) {
-  return '/api' + part;
+  return 'http://s2map.com/api' + part;
 }
 
 var method = 'POST';
@@ -688,6 +688,7 @@ initMapPage: function() {
   this.$boundsInput.attr('placeholder', this.placeholder);
 
   this.parseHash(window.location.hash.substring(1) || window.location.search.substring(1));
+  this.updateS2CoverMode();
   this.boundsCallback();
 },
 
@@ -772,10 +773,10 @@ parseHash: function(hash) {
 
   this.$radiusInput.val(params.radius);
 
-  this.$maxCells.val(params.max_cells);
-  this.$minLevel.val(params.min_level);
-  this.$maxLevel.val(params.max_level);
-  this.$levelMod.val(params.level_mod);
+  this.$maxCells.val(params.s2_max_cells);
+  this.$minLevel.val(params.s2_min_level);
+  this.$maxLevel.val(params.s2_max_level);
+  this.$levelMod.val(params.s2_level_mod);
 
   this.$boundsInput.val(params.points);
 },

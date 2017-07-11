@@ -1,5 +1,5 @@
 var baseurl = function(part) {
-  return 'http://s2map.com/api' + part;
+  return '/api' + part;
 }
 
 var method = 'POST';
@@ -209,6 +209,7 @@ getPoints: function(tokens) {
    * @return {Array.<L.Polygon>}
    */
   renderCells: function(cells) {
+    cells = cells['cells'];
     return _(cells).filter(function(cell) { return cell.token != "X"; })
       .map(_.bind(function(c) {
         return this.renderCell(c);
@@ -325,7 +326,7 @@ renderPolygon: function(polygon, bounds, dontClear) {
   }
 
   this.layerGroup.addLayer(polygon);
- 
+
   var downloadLink = $('<a href="#">Download as GeoJSON</a>');
   polygon.bindPopup(downloadLink.click(_.bind(function() {
     this.downloadData(polygon.toGeoJSON());

@@ -17,3 +17,5 @@ http-server
 *.Plo
 *.Po
 *.so.*
+
+*.pyc

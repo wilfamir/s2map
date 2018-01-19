@@ -2,7 +2,7 @@ var baseurl = function(part) {
   return '/api' + part;
 }
 
-var method = 'POST';
+var method = 'GET';
 if (window.location.host == 'localhost') {
   baseurl = function(part) {
     return 'http://localhost:9000' + part + '?callback=?';

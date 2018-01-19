@@ -76,8 +76,6 @@ def jsonp(func):
             return func(*args, **kwargs)
     return decorated_function
 
-@app.route('/api/s2cover', methods=['GET', 'POST'])
-
 @app.route('/api/s2info', methods=['GET', 'POST'])
 @jsonp
 def s2info():

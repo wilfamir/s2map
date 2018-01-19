@@ -6,12 +6,13 @@ using std::max;
 using std::swap;
 using std::reverse;
 
-#ifdef __GNUC__
+#if defined __GNUC__ || defined __APPLE__
 #include <ext/hash_map>
 #else
 #include <hash_map>
 #endif
 using __gnu_cxx::hash_map;
+
 
 #include <set>
 using std::set;
@@ -33,8 +34,6 @@ using std::vector;
 #include "s2latlngrect.h"
 #include "s2polygonbuilder.h"
 #include "s2polyline.h"
-
-DECLARE_bool(s2debug);  // defined in s2.cc
 
 static const unsigned char kCurrentEncodingVersionNumber = 1;
 
@@ -111,10 +110,10 @@ S2Polygon::~S2Polygon() {
 
 typedef pair<S2Point, S2Point> S2PointPair;
 
-#ifdef __GNUC__
-#include <ext/hash_set>
+#if defined __GNUC__ || defined __APPLE__
+#include<ext/hash_set>
 #else
-#include <hash_set>
+#include<hash_set>
 #endif
 namespace __gnu_cxx {
 

@@ -19,13 +19,13 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "s2cellid.h"
-#include "s2cell.h"
-#include "s2.h"
-#include "s2polygon.h"
-#include "s2polygonbuilder.h"
-#include "s2latlng.h"
-#include "s2regioncoverer.h"
+#include <s2/s2cellid.h>
+#include <s2/s2cell.h>
+#include <s2/s2.h>
+#include <s2/s2polygon.h>
+#include <s2/s2polygonbuilder.h>
+#include <s2/s2latlng.h>
+#include <s2/s2regioncoverer.h>
 
 #ifdef WIN32
 #include <winsock2.h>

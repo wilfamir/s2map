@@ -14,9 +14,16 @@
 #ifndef BASE_COMMANDLINEFLAGS_H
 #define BASE_COMMANDLINEFLAGS_H
 
-#define CONCAT(t1, t2)t1##t2
-#define DEFINE_bool(flag, default_value, help_text) bool CONCAT(FLAGS_,flag) = default_value
-#define DECLARE_bool(flag) extern bool CONCAT(FLAGS_,flag)
-#define DEFINE_int32(flag, default_value, help_text) int CONCAT(FLAGS_,flag) = default_value
+
+// All the gflags are moved here.
+
+#define FLAGS_s2debug DEBUG_MODE
+//, "Enable debugging checks in s2 code");
+#define FLAGS_always_recurse_on_children false
+/*            "When we test a query edge against a cell, we don't "
+            "recurse if there are only a few test edges in it.  "
+            "For testing, it is useful to always recurse to the end.  "
+            "You don't want to use this flag anywhere but in tests.");*/
+
 
 #endif  // BASE_COMMANDLINEFLAGS_H

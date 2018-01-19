@@ -21,20 +21,6 @@ using std::max;
 using std::swap;
 using std::reverse;
 
-#if defined __GNUC__ || defined __APPLE__
-#include <ext/hash_map>
-#else
-#include <hash_map>
-#endif
-using __gnu_cxx::hash_map;
-
-#if defined __GNUC__ || defined __APPLE__
-#include <ext/hash_set>
-#else
-#include <hash_set>
-#endif
-using __gnu_cxx::hash_set;
-
 #include <iterator>
 #include <limits>
 using std::numeric_limits;
@@ -66,18 +52,11 @@ using std::vector;
 #endif
 
 // ----------------------------------------------------------------------
-// FpToString()
 // FloatToString()
 // IntToString()
 //    Convert various types to their string representation.  These
 //    all do the obvious, trivial thing.
 // ----------------------------------------------------------------------
-
-string FpToString(Fprint fp) {
-  char buf[17];
-  snprintf(buf, sizeof(buf), "%016llx", fp);
-  return string(buf);
-}
 
 string FloatToString(float f, const char* format) {
   char buf[80];
@@ -138,7 +117,53 @@ string UInt64ToString(uint64 ui64) {
 //    for FastTimeToBuffer(), we guarantee that it is.)
 // ----------------------------------------------------------------------
 
+char *FastInt64ToBuffer(int64 i, char* buffer) {
+  FastInt64ToBufferLeft(i, buffer);
+  return buffer;
+}
 
+// Offset into buffer where FastInt32ToBuffer places the end of string
+// null character.  Also used by FastInt32ToBufferLeft
+static const int kFastInt32ToBufferOffset = 11;
+
+char *FastInt32ToBuffer(int32 i, char* buffer) {
+  FastInt32ToBufferLeft(i, buffer);
+  return buffer;
+}
+
+char *FastHexToBuffer(int i, char* buffer) {
+  CHECK(i >= 0) << "FastHexToBuffer() wants non-negative integers, not " << i;
+
+  static const char *hexdigits = "0123456789abcdef";
+  char *p = buffer + 21;
+  *p-- = '\0';
+  do {
+    *p-- = hexdigits[i & 15];   // mod by 16
+    i >>= 4;                    // divide by 16
+  } while (i > 0);
+  return p + 1;
+}
+
+char *InternalFastHexToBuffer(uint64 value, char* buffer, int num_byte) {
+  static const char *hexdigits = "0123456789abcdef";
+  buffer[num_byte] = '\0';
+  for (int i = num_byte - 1; i >= 0; i--) {
+    buffer[i] = hexdigits[uint32(value) & 0xf];
+    value >>= 4;
+  }
+  return buffer;
+}
+
+char *FastHex64ToBuffer(uint64 value, char* buffer) {
+  return InternalFastHexToBuffer(value, buffer, 16);
+}
+
+char *FastHex32ToBuffer(uint32 value, char* buffer) {
+  return InternalFastHexToBuffer(value, buffer, 8);
+}
+
+// Several converters use this table to reduce
+// division and modulo operations.
 static const char two_ASCII_digits[100][2] = {
   {'0','0'}, {'0','1'}, {'0','2'}, {'0','3'}, {'0','4'},
   {'0','5'}, {'0','6'}, {'0','7'}, {'0','8'}, {'0','9'},
@@ -162,6 +187,22 @@ static const char two_ASCII_digits[100][2] = {
   {'9','5'}, {'9','6'}, {'9','7'}, {'9','8'}, {'9','9'}
 };
 
+// ----------------------------------------------------------------------
+// FastInt32ToBufferLeft()
+// FastUInt32ToBufferLeft()
+// FastInt64ToBufferLeft()
+// FastUInt64ToBufferLeft()
+//
+// Like the Fast*ToBuffer() functions above, these are intended for speed.
+// Unlike the Fast*ToBuffer() functions, however, these functions write
+// their output to the beginning of the buffer (hence the name, as the
+// output is left-aligned).  The caller is responsible for ensuring that
+// the buffer has enough space to hold the output.
+//
+// Returns a pointer to the end of the string (i.e. the null character
+// terminating the string).
+// ----------------------------------------------------------------------
+
 char* FastUInt32ToBufferLeft(uint32 u, char* buffer) {
   int digits;
   const char *ASCII_digits = NULL;
@@ -177,39 +218,39 @@ char* FastUInt32ToBufferLeft(uint32 u, char* buffer) {
     buffer[0] = ASCII_digits[0];
     buffer[1] = ASCII_digits[1];
     buffer += 2;
-sublt100_000_000:
+ sublt100_000_000:
     u -= digits * 100000000;  // 100,000,000
-lt100_000_000:
+ lt100_000_000:
     digits = u / 1000000;  // 1,000,000
     ASCII_digits = two_ASCII_digits[digits];
     buffer[0] = ASCII_digits[0];
     buffer[1] = ASCII_digits[1];
     buffer += 2;
-sublt1_000_000:
+ sublt1_000_000:
     u -= digits * 1000000;  // 1,000,000
-lt1_000_000:
+ lt1_000_000:
     digits = u / 10000;  // 10,000
     ASCII_digits = two_ASCII_digits[digits];
     buffer[0] = ASCII_digits[0];
     buffer[1] = ASCII_digits[1];
     buffer += 2;
-sublt10_000:
+ sublt10_000:
     u -= digits * 10000;  // 10,000
-lt10_000:
+ lt10_000:
     digits = u / 100;
     ASCII_digits = two_ASCII_digits[digits];
     buffer[0] = ASCII_digits[0];
     buffer[1] = ASCII_digits[1];
     buffer += 2;
-sublt100:
+ sublt100:
     u -= digits * 100;
-lt100:
+ lt100:
     digits = u;
     ASCII_digits = two_ASCII_digits[digits];
     buffer[0] = ASCII_digits[0];
     buffer[1] = ASCII_digits[1];
     buffer += 2;
-done:
+ done:
     *buffer = 0;
     return buffer;
   }
@@ -248,7 +289,10 @@ char* FastInt32ToBufferLeft(int32 i, char* buffer) {
   uint32 u = i;
   if (i < 0) {
     *buffer++ = '-';
-    u = -i;
+    // We need to do the negation in modular (i.e., "unsigned")
+    // arithmetic; MSVC++ apprently warns for plain "-u", so
+    // we write the equivalent expression "0 - u" instead.
+    u = 0 - u;
   }
   return FastUInt32ToBufferLeft(u, buffer);
 }
@@ -299,59 +343,11 @@ char* FastInt64ToBufferLeft(int64 i, char* buffer) {
   uint64 u = i;
   if (i < 0) {
     *buffer++ = '-';
-    u = -i;
+    u = 0 - u;
   }
   return FastUInt64ToBufferLeft(u, buffer);
 }
 
-
-char *FastInt64ToBuffer(int64 i, char* buffer) {
-  FastInt64ToBufferLeft(i, buffer);
-  return buffer;
-}
-
-// Offset into buffer where FastInt32ToBuffer places the end of string
-// null character.  Also used by FastInt32ToBufferLeft
-static const int kFastInt32ToBufferOffset = 11;
-
-char *FastInt32ToBuffer(int32 i, char* buffer) {
-  FastInt32ToBufferLeft(i, buffer);
-  return buffer;
-}
-
-char *FastHexToBuffer(int i, char* buffer) {
-  CHECK(i >= 0) << "FastHexToBuffer() wants non-negative integers, not " << i;
-
-  static const char *hexdigits = "0123456789abcdef";
-  char *p = buffer + 21;
-  *p-- = '\0';
-  do {
-    *p-- = hexdigits[i & 15];   // mod by 16
-    i >>= 4;                    // divide by 16
-  } while (i > 0);
-  return p + 1;
-}
-
-char *InternalFastHexToBuffer(uint64 value, char* buffer, int num_byte) {
-  static const char *hexdigits = "0123456789abcdef";
-  buffer[num_byte] = '\0';
-  for (int i = num_byte - 1; i >= 0; i--) {
-    buffer[i] = hexdigits[uint32(value) & 0xf];
-    value >>= 4;
-  }
-  return buffer;
-}
-
-char *FastHex64ToBuffer(uint64 value, char* buffer) {
-  return InternalFastHexToBuffer(value, buffer, 16);
-}
-
-char *FastHex32ToBuffer(uint32 value, char* buffer) {
-  return InternalFastHexToBuffer(value, buffer, 8);
-}
-
-// Several converters use this table to reduce
-// division and modulo operations.
 static inline void PutTwoDigits(int i, char* p) {
   DCHECK_GE(i, 0);
   DCHECK_LT(i, 100);

@@ -216,7 +216,7 @@ S2CellId S2CellId::FromFaceIJ(int face, int i, int j) {
   // rather than local variables helps the compiler to do a better job
   // of register allocation as well.  Note that the two 32-bits halves
   // get shifted one bit to the left when they are combined.
-  uint32 n[2] = { 0, face << (kPosBits - 33) };
+  uint32 n[2] = { 0, static_cast<uint32>(face << (kPosBits - 33)) };
 
   // Alternating faces have opposite Hilbert curve orientations; this
   // is necessary in order for all faces to have a right-handed
@@ -261,8 +261,6 @@ S2CellId S2CellId::FromPoint(S2Point const& p) {
 S2CellId S2CellId::FromLatLng(S2LatLng const& ll) {
   return FromPoint(ll.ToPoint());
 }
-
-#include<stdio.h>
 
 int S2CellId::ToFaceIJOrientation(int* pi, int* pj, int* orientation) const {
   // Initialization if not done yet

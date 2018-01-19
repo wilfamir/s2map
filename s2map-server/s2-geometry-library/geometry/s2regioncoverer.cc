@@ -13,7 +13,8 @@ using std::reverse;
 #include <functional>
 using std::less;
 
-#ifdef __GNUC__
+
+#if defined __GNUC__ || defined __APPLE__
 #include <ext/hash_set>
 #else
 #include <hash_set>

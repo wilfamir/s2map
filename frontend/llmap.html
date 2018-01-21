@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.ie.css" />
 <![endif]-->
 
-<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>    
+<script src="http://cdn.leafletjs.com/leaflet-0.7.3/leaflet.js"></script>
 <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js"></script>
 <script type="text/javascript" src="thirdparty/jquery.js"></script>
     <script type="text/javascript" src="thirdparty/underscore.js"></script>
@@ -31,6 +31,11 @@
 
     <style>
 
+    body, html {
+      margin: 0;
+      padding: 0;
+    }
+
 .info {
   display: none;
 }
@@ -47,13 +52,13 @@
   width: 100%;
   text-align: center;
   overflow: hidden;
+  padding-bottom: 30px;
 }
 
       .controlsBox {
+        overflow-y: scroll;
+        height: 100%;
         padding: 10px;
-        -webkit-border-radius: 15px;
-        -moz-border-radius: 15px;
-        border-radius: 15px;
 
 background: #E9EAEE;
 border: 2px solid white;
@@ -115,6 +120,14 @@ a.button:active span {
   position: fixed;
   left: 210px;
   z-index: 10000;
+  top: 8px;
+}
+
+.boundsInput {
+  width: 100%;
+  margin-top: 3px;
+  margin-bottom: 3px;
+  height: 50vh;
 }
 
     </style>
@@ -162,7 +175,7 @@ a.button:active span {
           Point mode
         </label>
 	<br/>
-    
+
         <label>
           <input type="radio" name="mode" value="circle" class="circleMode" data-mode="circle"/>
           Circle mode
@@ -194,12 +207,12 @@ a.button:active span {
         </div>
       <br/>
 
-      <textarea class="boundsInput" rows="18"></textarea><br/>
+      <textarea class="boundsInput"></textarea><br/>
 
       <div class="plotButtonBox">
         <a class="button boundsButton"><span>Plot</span></a>
-      </div> 
-  
+      </div>
+
       <div class="info"/>
      </div>
     </div>

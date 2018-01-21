@@ -528,16 +528,6 @@ baseMaps: function() {
       ),
       mapboxTilesAttr
     ],
-    ["Mapquest Aerial",
-      new L.TileLayer(
-        'http://otile{s}.mqcdn.com/tiles/1.0.0/{type}/{z}/{x}/{y}.png',
-        {
-          subdomains: '1234',
-          type: 'sat',
-        }
-      ),
-      mqTilesAttr
-    ],
     ["Stamen Toner Lite", new L.StamenTileLayer("toner-lite"), stamenAttr],
     ["Stamen Toner", new L.StamenTileLayer("toner"), stamenAttr],
     ["Stamen Terrain", new L.StamenTileLayer("terrain"), stamenAttr]

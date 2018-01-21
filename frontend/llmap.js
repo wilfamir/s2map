@@ -420,7 +420,9 @@ boundsCallback: function() {
     }
 
     var ll = points[0];
-    this.map.setView(ll, 15);
+    // render markers will call setView again, and the map seems to hate having
+    // it called twice in rapid succession
+    // this.map.setView(ll, 15);
     var marker = new L.Marker(ll);
     this.renderMarkers([marker]);
     this.renderCovering([ll]);
@@ -471,7 +473,7 @@ boundsCallback: function() {
 
   var dotIcon = L.icon({
     iconAnchor: [5, 5],
-    iconUrl: '/img/blue-dot.png',
+    iconUrl: 'img/blue-dot.png',
   })
   var markerOpts = {}
   if (!this.inPointMode()) {

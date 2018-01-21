@@ -209,7 +209,6 @@ getPoints: function(tokens) {
    * @return {Array.<L.Polygon>}
    */
   renderCells: function(cells) {
-    cells = cells['cells'];
     return _(cells).filter(function(cell) { return cell.token != "X"; })
       .map(_.bind(function(c) {
         return this.renderCell(c);

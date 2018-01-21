@@ -81,18 +81,18 @@ def jsonp(func):
 def s2info():
   # need to make this work for GET and POST
   ids = request.args.get("id") or request.form['id'] or ''
-  return jsonify([cell_id_to_json(long(id)) for id in ids.split(',')])
+  return jsonify([cell_id_to_json(int(id)) for id in ids.split(',')])
 
 @nocache
 @app.route('/<path:path>')
 def send_app(path):
- print 'trying to send ' + path
+ print('trying to send ' + path)
  return send_from_directory('.', path)
 
 @nocache
 @app.route('/')
 def send_index():
-  print 'sending index?'
+  print('sending index?')
   return send_from_directory('.', "index.html")
 
 @nocache

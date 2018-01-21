@@ -39,5 +39,4 @@ I'm curious if other people find this useful or have feature suggestions.
 
 TODO
 ====
-- Update to python3 compatibilty
 - See about making it 100% python for ease of not compiling C++

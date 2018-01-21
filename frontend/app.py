@@ -81,7 +81,7 @@ def jsonp(func):
 def s2info():
   # need to make this work for GET and POST
   ids = request.args.get("id") or request.form['id'] or ''
-  return jsonify({'cells': [cell_id_to_json(long(id)) for id in ids.split(',')]})
+  return jsonify([cell_id_to_json(long(id)) for id in ids.split(',')])
 
 @nocache
 @app.route('/<path:path>')

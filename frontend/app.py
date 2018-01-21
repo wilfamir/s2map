@@ -89,5 +89,16 @@ def send_app(path):
  print 'trying to send ' + path
  return send_from_directory('.', path)
 
+@nocache
+@app.route('/')
+def send_index():
+  print 'sending index?'
+  return send_from_directory('.', "index.html")
+
+@nocache
+@app.route('/ind')
+def send_i2ndex():
+  return send_from_directory('.', "index.html")
+
 if __name__ == '__main__':
   app.run(debug=True, use_reloader=True)

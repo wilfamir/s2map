@@ -30,8 +30,8 @@ It can be run as follows:
 The version on s2map.com uses a combination of the python server for serving the frontend files (and really nothing else) and the C++ version for the API. I do this with a docker setup that compiles the C++ binary, installs the python dependencies, and chains them together with a simple nginx proxy. You can replicate this yourself, or work with docker
 
 - docker build -t s2map .
-- docker run -p 81:5000 --name s2map -t s2map
-- open http://localhost:5000
+- docker run -p 8000:5000 --name s2map -t s2map
+- open http://localhost:8000
 
 Errata
 ======
